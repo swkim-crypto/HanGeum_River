@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>농어촌공사 유속 측정 시스템</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 15px; background: #f5f7fa; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        h2 { margin-top: 0; color: #1e3a8a; font-size: 1.3rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; color: #4a5568; }
+        input[type="text"], input[type="number"] { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+        .gps-btn { background: #10b981; color: white; border: none; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 1rem; margin-bottom: 10px; cursor: pointer; }
+        .submit-btn { background: #1e40af; color: white; border: none; width: 100%; padding: 16px; border-radius: 8px; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
+        .gps-display { background: #f1f5f9; padding: 10px; border-radius: 6px; font-size: 0.85rem; font-family: monospace; color: #64748b; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>🌊 유속 실측 데이터 입력</h2>
+        <form id="measureForm">
+            <div class="form-group">
+                <label>농수로 ID</label>
+                <input type="text" id="channelId" placeholder="예: CH-001" required>
+            </div>
+            <div class="form-group">
+                <label>수로 폭 (m)</label>
+                <input type="number" id="width" step="0.01" placeholder="0.00" required>
+            </div>
+            <div class="form-group">
+                <label>현재 수심 (m)</label>
+                <input type="number" id="depth" step="0.01" placeholder="0.00" required>
+            </div>
+            <div class="form-group">
+                <label>실측 유속 (m/s)</label>
+                <input type="number" id="velocity" step="0.01" placeholder="0.00" required>
+            </div>
+            
+            <div class="form-group">
+                <label>현장 사진 촬영</label>
+                <!-- accept="image/*" capture="camera" 속성이 스마트폰에서 바로 카메라를 켭니다 -->
+                <input type="file" id="photo" accept="image/*" capture="camera" required>
+            </div>
+
+            <div class="form-group">
+                <button type="button" class="gps-btn" onclick="getGPS()">📍 현재 위치 좌표 가져오기</button>
+                <div class="gps-display">
+                    위도: <span id="latDisplay">미취득</span><br>
+                    경도: <span id="lngDisplay">미취득</span>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn">사무실 엑셀로 데이터 전송</button>
+        </form>
+    </div>
+
+    <script>
+        let lat = "";
+        let lng = "";
+        // 여기에 배포 완료된 Render 서버의 URL을 적으세요
+        const SERVER_URL = "https://your-render-app-name.onrender.com/upload"; 
+
+        function getGPS() {
+            if (!navigator.geolocation) {
+                alert("이 브라우저는 GPS를 지원하지 않습니다.");
+                return;
+            }
+            navigator.geolocation.getCurrentPosition((position) => {
+                lat = position.coords.latitude.toFixed(6);
+                lng = position.coords.longitude.toFixed(6);
+                document.getElementById("latDisplay").innerText = lat;
+                document.getElementById("lngDisplay").innerText = lng;
+                alert("좌표 취득 성공!");
+            }, (err) => {
+                alert("GPS 작동 에러: " + err.message + " \n위치 권한을 허용해주세요.");
+            }, { enableHighAccuracy: true });
+        }
+
+        document.getElementById("measureForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            if (!lat || !lng) {
+                alert("먼저 [현재 위치 좌표 가져오기] 버튼을 눌러주세요.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("channel_id", document.getElementById("channelId").value);
+            formData.append("width", document.getElementById("width").value);
+            formData.append("depth", document.getElementById("depth").value);
+            formData.append("velocity", document.getElementById("velocity").value);
+            formData.append("latitude", lat);
+            formData.append("longitude", lng);
+            formData.append("image", document.getElementById("photo").files[0]);
+
+            try {
+                const response = await fetch(SERVER_URL, { method: "POST", body: formData });
+                const result = await response.json();
+                if (response.ok) {
+                    alert("전송 완료! 엑셀 확인해 보세요.");
+                    document.getElementById("measureForm").reset();
+                    document.getElementById("latDisplay").innerText = "미취득";
+                    lat = ""; lng = "";
+                } else {
+                    alert("서버 오류: " + result.detail);
+                }
+            } catch (err) {
+                alert("전송 실패: 서버가 꺼져있거나 주소가 틀렸습니다.");
+            }
+        });
+    </script>
+</body>
+</html>
