@@ -20,8 +20,7 @@ GITHUB_TOKEN = os.getenv("GH_TOKEN")
 REPO_NAME    = os.getenv("GH_REPO")
 CSV_PATH     = "data.csv"
 
-# BOM 포함 헤더 — 유속1,2,3 / 평균유속 / 높이 / 메모 추가
-CSV_HEADER = "\ufeff조사일자,농수로ID,수로폭(m),수심(m),높이(m),유속1(m/s),유속2(m/s),유속3(m/s),평균유속(m/s),특이사항,위도,경도,사진링크\n"
+CSV_HEADER = "조사일자,농수로ID,수로폭(m),수심(m),높이(m),유속1(m/s),유속2(m/s),유속3(m/s),평균유속(m/s),특이사항,위도,경도,사진링크\n"
 
 def normalize(text: str) -> str:
     return unicodedata.normalize("NFC", text)
@@ -39,7 +38,7 @@ async def upload_data(
     v1:         float      = Form(0.0),
     v2:         float      = Form(0.0),
     v3:         float      = Form(0.0),
-    velocity:   float      = Form(...),   # 평균유속 (프론트에서 계산)
+    velocity:   float      = Form(...),
     memo:       str        = Form(""),
     latitude:   str        = Form(...),
     longitude:  str        = Form(...),
@@ -73,7 +72,7 @@ async def upload_data(
             existing_str = CSV_HEADER
             sha          = None
 
-        # ── 새 행: 메모의 쉼표를 세미콜론으로 치환(CSV 파싱 오류 방지) ──
+        # ── 새 행 추가 ───────────────────────────────────────────────────
         memo_safe = normalize(memo).replace(",", ";").replace("\n", " ")
         new_row = (
             f"{now},{normalize(channel_id)},"
@@ -81,13 +80,13 @@ async def upload_data(
             f"{v1:.3f},{v2:.3f},{v3:.3f},{velocity:.3f},"
             f"{memo_safe},{latitude},{longitude},{image_url}\n"
         )
-        updated_str  = existing_str + new_row
-        updated_b64  = base64.b64encode(updated_str.encode("utf-8-sig")).decode()
+        updated_str = existing_str + new_row
 
+        # ── CSV 저장 — str로 직접 전달 (PyGitHub가 내부에서 base64 처리) ─
         if sha:
-            repo.update_file(CSV_PATH, "Update data row", updated_b64, sha, branch="main")
+            repo.update_file(CSV_PATH, "Update data row", updated_str, sha, branch="main")
         else:
-            repo.create_file(CSV_PATH, "Create data file", updated_b64, branch="main")
+            repo.create_file(CSV_PATH, "Create data file", updated_str, branch="main")
 
         return {"status": "success", "message": "데이터 전송 완료!", "row": new_row.strip()}
 
