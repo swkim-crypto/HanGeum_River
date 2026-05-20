@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>농수로 현장 데이터 조회</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0; padding: 12px; background: #f0f4f8; color: #2d3748; font-size: 15px;
+    }
+
+    /* ── 헤더 ── */
+    .header {
+      background: #1e3a8a; color: #fff;
+      border-radius: 14px; padding: 16px 18px; margin-bottom: 12px;
+    }
+    .header h1 { margin: 0 0 4px; font-size: 1.1rem; }
+    .header-meta { font-size: 0.8rem; opacity: 0.8; }
+    .refresh-btn {
+      float: right; background: #3b82f6; color: #fff; border: none;
+      padding: 7px 14px; border-radius: 8px; font-size: 0.85rem;
+      font-weight: 700; cursor: pointer; margin-top: -4px;
+    }
+    .refresh-btn:active { background: #2563eb; }
+
+    /* ── 요약 카드 ── */
+    .summary-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 8px; margin-bottom: 12px;
+    }
+    .stat-card {
+      background: #fff; border-radius: 12px; padding: 12px 10px; text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+    }
+    .stat-card .num  { font-size: 1.5rem; font-weight: 800; color: #1e3a8a; }
+    .stat-card .lbl  { font-size: 0.72rem; color: #64748b; margin-top: 2px; }
+    .stat-card.warn  .num { color: #dc2626; }
+    .stat-card.ok    .num { color: #059669; }
+
+    /* ── 필터 바 ── */
+    .filter-bar {
+      background: #fff; border-radius: 12px; padding: 10px 12px;
+      margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    }
+    .filter-bar input {
+      flex: 1; min-width: 120px; padding: 8px 10px;
+      border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem;
+    }
+    .filter-bar select {
+      padding: 8px 10px; border: 1.5px solid #cbd5e1;
+      border-radius: 8px; font-size: 0.9rem; background: #f8fafc;
+    }
+
+    /* ── 데이터 카드 ── */
+    .data-card {
+      background: #fff; border-radius: 12px; margin-bottom: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.07); overflow: hidden;
+    }
+    .card-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 11px 14px; border-bottom: 1px solid #e2e8f0;
+      cursor: pointer;
+    }
+    .card-header .ch-id { font-weight: 800; font-size: 1rem; color: #1e3a8a; }
+    .card-header .ch-time { font-size: 0.75rem; color: #94a3b8; }
+    .badge {
+      font-size: 0.75rem; font-weight: 700; padding: 3px 9px;
+      border-radius: 20px; white-space: nowrap;
+    }
+    .badge-ok   { background: #dcfce7; color: #14532d; }
+    .badge-warn { background: #fee2e2; color: #7f1d1d; }
+
+    .card-body { padding: 12px 14px; display: none; }
+    .card-body.open { display: block; }
+
+    /* ── 측정값 그리드 ── */
+    .measure-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 6px 12px; margin-bottom: 10px;
+    }
+    .measure-grid .m-label { font-size: 0.78rem; color: #64748b; }
+    .measure-grid .m-val   { font-weight: 700; color: #1e293b; font-size: 0.95rem; }
+
+    /* ── 매닝 섹션 ── */
+    .manning-section {
+      background: #f0fdf4; border-radius: 9px; padding: 10px 12px; margin-bottom: 10px;
+    }
+    .manning-section h4 { margin: 0 0 8px; font-size: 0.82rem; color: #047857; }
+    .manning-grid {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px; font-size: 0.82rem; text-align: center;
+    }
+    .mg-item .mg-lbl { color: #6b7280; font-size: 0.72rem; }
+    .mg-item .mg-val { font-weight: 700; color: #065f46; }
+    .err-row {
+      margin-top: 8px; text-align: center;
+      font-size: 0.85rem; font-weight: 700; padding: 4px;
+      border-radius: 6px;
+    }
+    .err-ok   { background: #dcfce7; color: #14532d; }
+    .err-warn { background: #fee2e2; color: #7f1d1d; }
+
+    /* ── 사진 ── */
+    .photo-link {
+      display: block; background: #f1f5f9; border-radius: 8px;
+      padding: 9px 12px; text-align: center; color: #3b82f6;
+      font-weight: 600; font-size: 0.85rem; text-decoration: none;
+      margin-bottom: 8px;
+    }
+    .photo-thumb {
+      width: 100%; max-height: 200px; object-fit: cover;
+      border-radius: 8px; margin-bottom: 8px; display: none;
+    }
+
+    /* ── GPS ── */
+    .gps-link {
+      display: block; background: #eff6ff; border-radius: 8px;
+      padding: 8px 12px; color: #1d4ed8; font-size: 0.8rem;
+      text-decoration: none; text-align: center; font-weight: 600;
+    }
+
+    /* ── 로딩/에러 ── */
+    .loading {
+      text-align: center; padding: 40px 20px; color: #64748b;
+    }
+    .spinner {
+      width: 32px; height: 32px; border: 3px solid #e2e8f0;
+      border-top-color: #3b82f6; border-radius: 50%;
+      animation: spin .7s linear infinite; margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-msg {
+      background: #fee2e2; color: #7f1d1d; border-radius: 10px;
+      padding: 16px; text-align: center; margin: 12px 0;
+    }
+    .empty-msg {
+      text-align: center; padding: 30px; color: #94a3b8; font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── 헤더 ──────────────────────────────────── -->
+<div class="header">
+  <button class="refresh-btn" onclick="loadData()">🔄 새로고침</button>
+  <h1>🌊 농수로 현장 조회</h1>
+  <div class="header-meta" id="lastUpdate">불러오는 중…</div>
+</div>
+
+<!-- ── 요약 카드 ─────────────────────────────── -->
+<div class="summary-grid">
+  <div class="stat-card">
+    <div class="num" id="statTotal">-</div>
+    <div class="lbl">전체 측정</div>
+  </div>
+  <div class="stat-card ok">
+    <div class="num" id="statOk">-</div>
+    <div class="lbl">✔ 적합</div>
+  </div>
+  <div class="stat-card warn">
+    <div class="num" id="statWarn">-</div>
+    <div class="lbl">⚠ 재측 필요</div>
+  </div>
+</div>
+
+<!-- ── 필터 ──────────────────────────────────── -->
+<div class="filter-bar">
+  <input type="text" id="filterText" placeholder="🔍 수로ID 검색…" oninput="renderCards()">
+  <select id="filterJudge" onchange="renderCards()">
+    <option value="">전체</option>
+    <option value="ok">✔ 적합만</option>
+    <option value="warn">⚠ 재측만</option>
+  </select>
+</div>
+
+<!-- ── 데이터 목록 ─────────────────────────────── -->
+<div id="dataContainer">
+  <div class="loading"><div class="spinner"></div>데이터 불러오는 중…</div>
+</div>
+
+<script>
+  const CSV_URL = "https://raw.githubusercontent.com/swkim-crypto/HanGeum_River/main/data.csv";
+  const n_coeff = 0.025;
+  const S_slope = 0.001;
+  const ERR_THRESHOLD = 10; // %
+
+  let allRows = [];
+
+  /* ── CSV 파싱 ── */
+  function parseCSV(text) {
+    const lines = text.trim().split("\n").filter(l => l.trim());
+    if (lines.length < 2) return [];
+    // 헤더 제거, BOM 제거
+    const dataLines = lines.slice(1);
+    return dataLines.map(line => {
+      const cols = line.split(",");
+      return {
+        date:     (cols[0] || "").trim(),
+        id:       (cols[1] || "").trim(),
+        width:    parseFloat(cols[2]) || 0,
+        depth:    parseFloat(cols[3]) || 0,
+        velocity: parseFloat(cols[4]) || 0,
+        lat:      (cols[5] || "").trim(),
+        lng:      (cols[6] || "").trim(),
+        photo:    (cols[7] || "").trim(),
+      };
+    }).filter(r => r.id);
+  }
+
+  /* ── 매닝 계산 ── */
+  function manning(r) {
+    const A  = r.width * r.depth;
+    const P  = r.width + 2 * r.depth;
+    const R  = P > 0 ? A / P : 0;
+    const Q  = A * r.velocity;
+    const Qm = (1 / n_coeff) * A * Math.pow(R, 2/3) * Math.pow(S_slope, 0.5);
+    const errPct = Qm > 0 ? ((Q - Qm) / Qm) * 100 : 0;
+    return { A, P, R, Q, Qm, errPct, isWarn: Math.abs(errPct) > ERR_THRESHOLD };
+  }
+
+  /* ── 데이터 불러오기 ── */
+  async function loadData() {
+    document.getElementById("dataContainer").innerHTML =
+      '<div class="loading"><div class="spinner"></div>데이터 불러오는 중…</div>';
+    document.getElementById("lastUpdate").textContent = "불러오는 중…";
+
+    try {
+      // 캐시 우회
+      const res = await fetch(CSV_URL + "?t=" + Date.now());
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const text = await res.text();
+      allRows = parseCSV(text).reverse(); // 최신순
+
+      const now = new Date().toLocaleString("ko-KR");
+      document.getElementById("lastUpdate").textContent = "업데이트: " + now;
+
+      updateSummary();
+      renderCards();
+    } catch (e) {
+      document.getElementById("dataContainer").innerHTML =
+        `<div class="error-msg">❌ 데이터를 불러올 수 없습니다.<br><small>${e.message}</small><br><br>
+         잠시 후 새로고침 버튼을 눌러주세요.</div>`;
+      document.getElementById("lastUpdate").textContent = "불러오기 실패";
+    }
+  }
+
+  /* ── 요약 업데이트 ── */
+  function updateSummary() {
+    let warnCount = 0;
+    allRows.forEach(r => { if (manning(r).isWarn) warnCount++; });
+    document.getElementById("statTotal").textContent = allRows.length;
+    document.getElementById("statOk").textContent   = allRows.length - warnCount;
+    document.getElementById("statWarn").textContent = warnCount;
+  }
+
+  /* ── 카드 렌더 ── */
+  function renderCards() {
+    const filterText  = document.getElementById("filterText").value.trim().toLowerCase();
+    const filterJudge = document.getElementById("filterJudge").value;
+
+    let rows = allRows.filter(r => {
+      if (filterText && !r.id.toLowerCase().includes(filterText)) return false;
+      if (filterJudge) {
+        const isWarn = manning(r).isWarn;
+        if (filterJudge === "warn" && !isWarn) return false;
+        if (filterJudge === "ok"   &&  isWarn) return false;
+      }
+      return true;
+    });
+
+    if (rows.length === 0) {
+      document.getElementById("dataContainer").innerHTML =
+        '<div class="empty-msg">조건에 맞는 데이터가 없습니다.</div>';
+      return;
+    }
+
+    document.getElementById("dataContainer").innerHTML =
+      rows.map((r, i) => buildCard(r, i)).join("");
+  }
+
+  /* ── 카드 HTML 생성 ── */
+  function buildCard(r, idx) {
+    const m = manning(r);
+    const badgeClass = m.isWarn ? "badge-warn" : "badge-ok";
+    const badgeText  = m.isWarn ? "⚠ 재측 필요" : "✔ 적합";
+    const errClass   = m.isWarn ? "err-warn" : "err-ok";
+    const mapsUrl    = `https://maps.google.com/?q=${r.lat},${r.lng}`;
+    const cardId     = "card-" + idx;
+
+    return `
+    <div class="data-card">
+      <div class="card-header" onclick="toggleCard('${cardId}')">
+        <div>
+          <div class="ch-id">${r.id}</div>
+          <div class="ch-time">${r.date}</div>
+        </div>
+        <span class="badge ${badgeClass}">${badgeText}</span>
+      </div>
+      <div class="card-body" id="${cardId}">
+
+        <div class="measure-grid">
+          <div><div class="m-label">수로 폭</div><div class="m-val">${r.width.toFixed(3)} m</div></div>
+          <div><div class="m-label">수심</div><div class="m-val">${r.depth.toFixed(3)} m</div></div>
+          <div><div class="m-label">실측 유속</div><div class="m-val">${r.velocity.toFixed(3)} m/s</div></div>
+          <div><div class="m-label">실측 유량</div><div class="m-val">${m.Q.toFixed(4)} m³/s</div></div>
+        </div>
+
+        <div class="manning-section">
+          <h4>📐 매닝 계산 결과 (n=${n_coeff}, S=1/${Math.round(1/S_slope)})</h4>
+          <div class="manning-grid">
+            <div class="mg-item"><div class="mg-lbl">단면적 A</div><div class="mg-val">${m.A.toFixed(3)} m²</div></div>
+            <div class="mg-item"><div class="mg-lbl">윤변 P</div><div class="mg-val">${m.P.toFixed(3)} m</div></div>
+            <div class="mg-item"><div class="mg-lbl">경심 R</div><div class="mg-val">${m.R.toFixed(4)} m</div></div>
+            <div class="mg-item" style="grid-column:1/3"><div class="mg-lbl">매닝 유량 Qm</div><div class="mg-val">${m.Qm.toFixed(4)} m³/s</div></div>
+            <div class="mg-item"><div class="mg-lbl">실측 유량 Q</div><div class="mg-val">${m.Q.toFixed(4)} m³/s</div></div>
+          </div>
+          <div class="err-row ${errClass}">
+            오차율 ${m.errPct.toFixed(1)}% ${m.isWarn ? "— 재측정 검토 필요" : "— 측정값 신뢰 가능"}
+          </div>
+        </div>
+
+        ${r.photo
+          ? `<img class="photo-thumb" id="img-${idx}" src="${r.photo}"
+               onerror="this.style.display='none'"
+               onload="this.style.display='block'">
+             <a class="photo-link" href="${r.photo}" target="_blank">📷 사진 원본 보기</a>`
+          : ""}
+
+        ${r.lat && r.lng
+          ? `<a class="gps-link" href="${mapsUrl}" target="_blank">
+               📍 구글 지도에서 위치 보기 (${r.lat}, ${r.lng})</a>`
+          : ""}
+      </div>
+    </div>`;
+  }
+
+  /* ── 카드 접기/펼치기 ── */
+  function toggleCard(id) {
+    const el = document.getElementById(id);
+    el.classList.toggle("open");
+  }
+
+  /* ── 최초 로드 ── */
+  loadData();
+</script>
+</body>
+</html>
