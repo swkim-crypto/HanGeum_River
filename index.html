@@ -10,46 +10,42 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       margin: 0; padding: 12px; background: #f0f4f8; color: #2d3748; font-size: 16px;
     }
-
-    /* ── 카드 ── */
     .card {
       background: #fff; padding: 18px; border-radius: 14px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 14px;
     }
-    h2 {
-      margin: 0 0 14px; color: #1e3a8a; font-size: 1.15rem;
-      border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;
-    }
+    h2 { margin: 0 0 14px; color: #1e3a8a; font-size: 1.15rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
     h3 { margin: 0 0 10px; color: #276749; font-size: 1rem; }
-
-    /* ── 폼 요소 ── */
     .form-group { margin-bottom: 13px; }
     label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 0.88rem; color: #4a5568; }
-    input[type="text"], input[type="number"] {
+    input[type="text"], input[type="number"], textarea {
       width: 100%; padding: 13px 12px; border: 1.5px solid #cbd5e1;
-      border-radius: 9px; font-size: 1rem; transition: border-color .2s;
-      background: #f8fafc;
+      border-radius: 9px; font-size: 1rem; background: #f8fafc;
+      transition: border-color .2s; font-family: inherit;
     }
-    input:focus { outline: none; border-color: #3b82f6; background: #fff; }
+    textarea { resize: vertical; min-height: 70px; }
+    input:focus, textarea:focus { outline: none; border-color: #3b82f6; background: #fff; }
 
-    /* ── 버튼 ── */
+    /* 유속 3회 입력 그리드 */
+    .velocity-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+    .velocity-grid input { padding: 11px 8px; text-align: center; }
+    .avg-display {
+      background: #eff6ff; border: 1.5px solid #93c5fd; border-radius: 9px;
+      padding: 10px 14px; font-size: 0.9rem; color: #1e3a8a; font-weight: 700;
+      text-align: center;
+    }
+
     .btn-gps {
       background: #059669; color: #fff; border: none;
       width: 100%; padding: 13px; border-radius: 9px;
       font-weight: 700; font-size: 1rem; cursor: pointer; margin-bottom: 8px;
     }
-    .btn-gps:active { background: #047857; }
-
     .btn-submit {
       background: #1d4ed8; color: #fff; border: none;
       width: 100%; padding: 16px; border-radius: 10px;
       font-weight: 700; font-size: 1.05rem; cursor: pointer;
-      transition: background .2s;
     }
     .btn-submit:disabled { background: #93c5fd; cursor: not-allowed; }
-    .btn-submit:not(:disabled):active { background: #1e40af; }
-
-    /* ── GPS 표시 ── */
     .gps-display {
       background: #f1f5f9; padding: 10px 12px; border-radius: 8px;
       font-size: 0.84rem; font-family: monospace; color: #475569; line-height: 1.7;
@@ -57,27 +53,18 @@
     .gps-ok  { color: #065f46; font-weight: 700; }
     .gps-bad { color: #b91c1c; font-weight: 700; }
 
-    /* ── 매닝 미리보기 박스 ── */
     #manningBox {
-      display: none;
-      background: #ecfdf5; border: 1.5px solid #6ee7b7;
+      display: none; background: #ecfdf5; border: 1.5px solid #6ee7b7;
       border-radius: 10px; padding: 14px 16px; margin-top: 12px;
     }
-    .manning-grid {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 8px 16px; font-size: 0.9rem;
-    }
+    .manning-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; font-size: 0.9rem; }
     .manning-grid .label { color: #047857; font-weight: 600; }
     .manning-grid .val   { color: #064e3b; font-weight: 700; font-family: monospace; }
 
-    /* ── 사진 미리보기 ── */
     #photoPreview {
-      display: none; width: 100%; max-height: 180px;
-      object-fit: cover; border-radius: 8px; margin-top: 8px;
-      border: 1.5px solid #cbd5e1;
+      display: none; width: 100%; max-height: 180px; object-fit: cover;
+      border-radius: 8px; margin-top: 8px; border: 1.5px solid #cbd5e1;
     }
-
-    /* ── 상태 메시지 ── */
     #statusMsg {
       display: none; text-align: center; padding: 13px;
       border-radius: 9px; font-weight: 600; font-size: 0.95rem; margin-top: 10px;
@@ -85,8 +72,6 @@
     .msg-loading { background: #fef9c3; color: #713f12; }
     .msg-ok      { background: #dcfce7; color: #14532d; }
     .msg-err     { background: #fee2e2; color: #7f1d1d; }
-
-    /* ── 스피너 ── */
     .spinner {
       display: inline-block; width: 16px; height: 16px;
       border: 2px solid #fde68a; border-top-color: #92400e;
@@ -94,32 +79,53 @@
       vertical-align: middle; margin-right: 6px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .section-label {
+      font-size: 0.78rem; color: #94a3b8; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      margin-bottom: 6px; margin-top: 4px;
+    }
   </style>
 </head>
 <body>
 
-<!-- ── 입력 카드 ───────────────────────────────────────── -->
 <div class="card">
   <h2>🌊 유속 실측 데이터 입력</h2>
 
+  <!-- 기본 정보 -->
   <div class="form-group">
     <label>농수로 ID</label>
     <input type="text" id="channelId" placeholder="예: CH-001" required>
   </div>
-  <div class="form-group">
-    <label>수로 폭 (m)</label>
-    <input type="number" id="width" step="0.001" placeholder="0.000" required>
-  </div>
-  <div class="form-group">
-    <label>현재 수심 (m)</label>
-    <input type="number" id="depth" step="0.001" placeholder="0.000" required>
-  </div>
-  <div class="form-group">
-    <label>실측 유속 (m/s)</label>
-    <input type="number" id="velocity" step="0.001" placeholder="0.000" required>
+
+  <!-- 수로 단면 -->
+  <div class="section-label">📐 수로 단면</div>
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:13px;">
+    <div>
+      <label>수로폭 B (m)</label>
+      <input type="number" id="width" step="0.001" placeholder="0.000" oninput="updateManning()">
+    </div>
+    <div>
+      <label>수심 H (m)</label>
+      <input type="number" id="depth" step="0.001" placeholder="0.000" oninput="updateManning()">
+    </div>
+    <div>
+      <label>높이 H' (m)</label>
+      <input type="number" id="height" step="0.001" placeholder="0.000">
+    </div>
   </div>
 
-  <!-- 매닝 미리보기 (수치 입력 시 자동 계산) -->
+  <!-- 유속 3회 -->
+  <div class="form-group">
+    <label>실측 유속 3회 (m/s)</label>
+    <div class="velocity-grid">
+      <input type="number" id="v1" step="0.001" placeholder="1차" oninput="updateVelocity()">
+      <input type="number" id="v2" step="0.001" placeholder="2차" oninput="updateVelocity()">
+      <input type="number" id="v3" step="0.001" placeholder="3차" oninput="updateVelocity()">
+    </div>
+    <div class="avg-display">평균 유속: <span id="avgDisplay">— m/s</span></div>
+  </div>
+
+  <!-- 매닝 미리보기 -->
   <div id="manningBox">
     <h3>📐 매닝 유량 미리보기</h3>
     <div class="manning-grid">
@@ -130,17 +136,23 @@
       <span class="label">매닝유량 Qm</span><span class="val" id="mQm">-</span>
       <span class="label">오차율</span>   <span class="val" id="mErr">-</span>
     </div>
-    <div style="font-size:0.75rem;color:#6b7280;margin-top:8px;">
-      n=0.025, S=1/1000 (기본값 — 실제 조건에 맞게 조정 필요)
-    </div>
+    <div style="font-size:0.75rem;color:#6b7280;margin-top:8px;">n=0.025, S=1/1000 (기본값)</div>
   </div>
 
+  <!-- 특이사항 -->
   <div class="form-group" style="margin-top:13px;">
+    <label>특이사항 메모</label>
+    <textarea id="memo" placeholder="예: 수초 많음, 부유물 있음, 호안 손상 등"></textarea>
+  </div>
+
+  <!-- 사진 -->
+  <div class="form-group">
     <label>현장 사진 촬영</label>
     <input type="file" id="photo" accept="image/*" capture="environment" required>
     <img id="photoPreview" alt="사진 미리보기">
   </div>
 
+  <!-- GPS -->
   <div class="form-group">
     <button type="button" class="btn-gps" onclick="getGPS()">📍 현재 위치 좌표 가져오기</button>
     <div class="gps-display">
@@ -152,27 +164,58 @@
   <button id="submitBtn" class="btn-submit" onclick="submitForm()">
     📤 사무실 엑셀로 데이터 전송
   </button>
-
   <div id="statusMsg"></div>
 </div>
 
-<!-- ── 도움말 카드 ─────────────────────────────────────── -->
 <div class="card" style="font-size:0.84rem; color:#64748b; line-height:1.8;">
   <strong style="color:#1e3a8a;">💡 사용 안내</strong><br>
-  ① ID·측정값 입력 → ② 사진 촬영 → ③ 좌표 취득 → ④ 전송<br>
-  전송 후 엑셀에서 <strong>[데이터 → 모두 새로 고침]</strong> 클릭
+  ① ID·단면 입력 → ② 유속 3회 입력 → ③ 메모 → ④ 사진 → ⑤ 좌표 → ⑥ 전송<br>
+  전송 후 구글 시트에서 <strong>importFromGitHub</strong> 실행
 </div>
 
 <script>
   const SERVER_URL = "https://hangeum-river.onrender.com/upload";
-  const n = 0.025;   // 조도계수
-  const S = 0.001;   // 경사
-
+  const n = 0.025, S = 0.001;
   let lat = "", lng = "";
+
+  /* ── 평균 유속 계산 ── */
+  function updateVelocity() {
+    const vals = ["v1","v2","v3"].map(id => parseFloat(document.getElementById(id).value)).filter(v => !isNaN(v) && v > 0);
+    const avg = vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : null;
+    document.getElementById("avgDisplay").textContent = avg ? avg.toFixed(3) + " m/s" : "— m/s";
+    updateManning();
+  }
+
+  /* ── 매닝 미리보기 ── */
+  function updateManning() {
+    const B = parseFloat(document.getElementById("width").value);
+    const H = parseFloat(document.getElementById("depth").value);
+    const vals = ["v1","v2","v3"].map(id => parseFloat(document.getElementById(id).value)).filter(v => !isNaN(v) && v > 0);
+    const V = vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : 0;
+    const box = document.getElementById("manningBox");
+    if (!B || !H || !V || B <= 0 || H <= 0 || V <= 0) { box.style.display = "none"; return; }
+
+    const A  = B * H;
+    const P  = B + 2 * H;
+    const R  = A / P;
+    const Q  = A * V;
+    const Qm = (1/n) * A * Math.pow(R, 2/3) * Math.pow(S, 0.5);
+    const errPct = ((Q - Qm) / Qm) * 100;
+    const errColor = Math.abs(errPct) > 10 ? "#dc2626" : "#059669";
+
+    document.getElementById("mA").textContent  = A.toFixed(3)  + " m²";
+    document.getElementById("mP").textContent  = P.toFixed(3)  + " m";
+    document.getElementById("mR").textContent  = R.toFixed(4)  + " m";
+    document.getElementById("mQ").textContent  = Q.toFixed(4)  + " m³/s";
+    document.getElementById("mQm").textContent = Qm.toFixed(4) + " m³/s";
+    const errEl = document.getElementById("mErr");
+    errEl.textContent = errPct.toFixed(1) + "%" + (Math.abs(errPct) > 10 ? " ⚠ 재측 검토" : " ✔ 적합");
+    errEl.style.color = errColor;
+    box.style.display = "block";
+  }
 
   /* ── GPS ── */
   function getGPS() {
-    if (!navigator.geolocation) { alert("이 브라우저는 GPS를 지원하지 않습니다."); return; }
     navigator.geolocation.getCurrentPosition(
       pos => {
         lat = pos.coords.latitude.toFixed(6);
@@ -182,63 +225,23 @@
         ld.textContent = lat;  ld.className = "gps-ok";
         lgd.textContent = lng; lgd.className = "gps-ok";
       },
-      err => alert("GPS 오류: " + err.message + "\n위치 권한을 허용해주세요."),
+      err => alert("GPS 오류: " + err.message),
       { enableHighAccuracy: true, timeout: 15000 }
     );
   }
-
-  /* ── 매닝 미리보기 ── */
-  function updateManning() {
-    const B = parseFloat(document.getElementById("width").value);
-    const H = parseFloat(document.getElementById("depth").value);
-    const V = parseFloat(document.getElementById("velocity").value);
-    const box = document.getElementById("manningBox");
-
-    if (!B || !H || !V || B <= 0 || H <= 0 || V <= 0) { box.style.display = "none"; return; }
-
-    const A  = B * H;
-    const P  = B + 2 * H;
-    const R  = A / P;
-    const Q  = A * V;
-    const Qm = (1 / n) * A * Math.pow(R, 2/3) * Math.pow(S, 0.5);
-    const errPct = ((Q - Qm) / Qm) * 100;
-    const errColor = Math.abs(errPct) > 10 ? "#dc2626" : "#059669";
-
-    document.getElementById("mA").textContent  = A.toFixed(3)  + " m²";
-    document.getElementById("mP").textContent  = P.toFixed(3)  + " m";
-    document.getElementById("mR").textContent  = R.toFixed(4)  + " m";
-    document.getElementById("mQ").textContent  = Q.toFixed(4)  + " m³/s";
-    document.getElementById("mQm").textContent = Qm.toFixed(4) + " m³/s";
-
-    const errEl = document.getElementById("mErr");
-    errEl.textContent = errPct.toFixed(1) + "%" + (Math.abs(errPct) > 10 ? " ⚠ 재측 검토" : " ✔ 적합");
-    errEl.style.color = errColor;
-
-    box.style.display = "block";
-  }
-
-  ["width","depth","velocity"].forEach(id =>
-    document.getElementById(id).addEventListener("input", updateManning)
-  );
 
   /* ── 사진 미리보기 ── */
   document.getElementById("photo").addEventListener("change", e => {
     const file = e.target.files[0];
     const prev = document.getElementById("photoPreview");
-    if (file) {
-      prev.src = URL.createObjectURL(file);
-      prev.style.display = "block";
-    } else {
-      prev.style.display = "none";
-    }
+    if (file) { prev.src = URL.createObjectURL(file); prev.style.display = "block"; }
+    else prev.style.display = "none";
   });
 
   /* ── 상태 메시지 ── */
   function showStatus(type, html) {
     const el = document.getElementById("statusMsg");
-    el.className = "msg-" + type;
-    el.innerHTML = html;
-    el.style.display = "block";
+    el.className = "msg-" + type; el.innerHTML = html; el.style.display = "block";
     if (type !== "loading") setTimeout(() => { el.style.display = "none"; }, 6000);
   }
 
@@ -247,59 +250,62 @@
     const channelId = document.getElementById("channelId").value.trim();
     const width     = document.getElementById("width").value;
     const depth     = document.getElementById("depth").value;
-    const velocity  = document.getElementById("velocity").value;
+    const height    = document.getElementById("height").value || "0";
+    const v1        = document.getElementById("v1").value;
+    const v2        = document.getElementById("v2").value;
+    const v3        = document.getElementById("v3").value;
+    const memo      = document.getElementById("memo").value.trim();
     const photo     = document.getElementById("photo").files[0];
 
-    if (!channelId || !width || !depth || !velocity) {
-      alert("모든 측정값을 입력해주세요."); return;
+    const vVals = [v1,v2,v3].map(parseFloat).filter(v => !isNaN(v) && v > 0);
+    if (!channelId || !width || !depth || vVals.length === 0) {
+      alert("수로ID, 폭, 수심, 유속(최소 1회) 를 입력해주세요."); return;
     }
-    if (!photo) {
-      alert("현장 사진을 촬영해주세요."); return;
-    }
-    if (!lat || !lng) {
-      alert("📍 먼저 [현재 위치 좌표 가져오기]를 눌러주세요."); return;
-    }
+    if (!photo) { alert("현장 사진을 촬영해주세요."); return; }
+    if (!lat || !lng) { alert("📍 위치 좌표를 먼저 가져와주세요."); return; }
+
+    const avgVelocity = (vVals.reduce((a,b) => a+b, 0) / vVals.length).toFixed(3);
 
     const btn = document.getElementById("submitBtn");
     btn.disabled = true;
-    showStatus("loading", '<span class="spinner"></span>서버 전송 중… (최대 40초 소요)');
+    showStatus("loading", '<span class="spinner"></span>서버 전송 중… (최대 40초)');
 
     const formData = new FormData();
     formData.append("channel_id", channelId);
     formData.append("width",      width);
     formData.append("depth",      depth);
-    formData.append("velocity",   velocity);
+    formData.append("height",     height);
+    formData.append("v1",         v1 || "0");
+    formData.append("v2",         v2 || "0");
+    formData.append("v3",         v3 || "0");
+    formData.append("velocity",   avgVelocity);
+    formData.append("memo",       memo);
     formData.append("latitude",   lat);
     formData.append("longitude",  lng);
     formData.append("image",      photo);
 
     try {
-      const res = await fetch(SERVER_URL, { method: "POST", body: formData });
+      const res  = await fetch(SERVER_URL, { method: "POST", body: formData });
       const data = await res.json();
-
       if (res.ok) {
-        showStatus("ok", "✅ 전송 완료! 엑셀에서 새로 고침 하세요.");
-        // 폼 완전 초기화
-        document.getElementById("channelId").value = "";
-        document.getElementById("width").value = "";
-        document.getElementById("depth").value = "";
-        document.getElementById("velocity").value = "";
-        // 파일 인풋 초기화 (reset trick)
+        showStatus("ok", "✅ 전송 완료!");
+        // 초기화
+        ["channelId","width","depth","height","v1","v2","v3","memo"].forEach(id => document.getElementById(id).value = "");
+        document.getElementById("avgDisplay").textContent = "— m/s";
+        document.getElementById("manningBox").style.display = "none";
         const photoInput = document.getElementById("photo");
         photoInput.value = "";
         photoInput.dispatchEvent(new Event("change"));
-        // GPS 초기화
         lat = ""; lng = "";
         ["latDisplay","lngDisplay"].forEach(id => {
           const el = document.getElementById(id);
           el.textContent = "미취득"; el.className = "gps-bad";
         });
-        document.getElementById("manningBox").style.display = "none";
       } else {
         showStatus("err", "❌ 서버 오류: " + (data.detail || "알 수 없는 오류"));
       }
     } catch (err) {
-      showStatus("err", "❌ 전송 실패: 서버가 꺼져있거나 네트워크를 확인하세요.");
+      showStatus("err", "❌ 전송 실패: 네트워크를 확인하세요.");
     } finally {
       btn.disabled = false;
     }
