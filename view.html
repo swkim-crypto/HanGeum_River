@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>농수로 현장 데이터 조회</title>
+  <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=5dc9c105620dc501aa39597dc6e24a2a"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 12px; background: #f0f4f8; color: #2d3748; font-size: 15px; }
@@ -86,8 +87,6 @@
   <div class="loading"><div class="spinner"></div>데이터 불러오는 중…</div>
 </div>
 
-<!-- 카카오맵 SDK: autoload=false 없이 직접 로드 -->
-<script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=5dc9c105620dc501aa39597dc6e24a2a"></script>
 <script>
   const CSV_URL = "https://raw.githubusercontent.com/swkim-crypto/HanGeum_River/main/data.csv";
   const n_coeff = 0.025, S_slope = 0.001, ERR_THR = 10;
