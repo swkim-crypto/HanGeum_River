@@ -267,17 +267,6 @@
     const file = e.target.files[0];
     if (!file) return;
 
-    // 입력값 검증
-    const channelId = document.getElementById("channelId").value.trim();
-    const width   = document.getElementById("width").value;
-    const depth   = document.getElementById("depth").value;
-    const vVals   = ["v1","v2","v3"].map(id => parseFloat(document.getElementById(id).value)).filter(v => !isNaN(v) && v > 0);
-    if (!channelId || !width || !depth || vVals.length === 0) {
-      alert("사진 촬영 전에 수로ID, 폭, 수심, 유속(최소 1회)을 먼저 입력해주세요.");
-      document.getElementById("photo").value = "";
-      return;
-    }
-
     // 사진 미리보기 업데이트
     const previewUrl = URL.createObjectURL(file);
     document.getElementById("photoPreview").src = previewUrl;
@@ -370,6 +359,13 @@
     closePopup();
 
     const channelId  = document.getElementById("channelId").value.trim();
+    const _width  = document.getElementById("width").value;
+    const _depth  = document.getElementById("depth").value;
+    const _vVals  = ["v1","v2","v3"].map(id => parseFloat(document.getElementById(id).value)).filter(v => !isNaN(v) && v > 0);
+    if (!channelId || !_width || !_depth || _vVals.length === 0) {
+      alert("수로ID, 폭, 수심, 유속(최소 1회)을 입력해주세요.");
+      return;
+    }
     const width      = document.getElementById("width").value;
     const depth      = document.getElementById("depth").value;
     const height     = document.getElementById("height").value || "0";
