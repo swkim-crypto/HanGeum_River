@@ -4,13 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>농수로 현장 데이터 조회</title>
+  <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=5dc9c105620dc501aa39597dc6e24a2a&autoload=false"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 12px; background: #f0f4f8; color: #2d3748; font-size: 15px; }
     .header { background: #1e3a8a; color: #fff; border-radius: 14px; padding: 16px 18px; margin-bottom: 12px; }
     .header h1 { margin: 0 0 4px; font-size: 1.1rem; }
     .header-meta { font-size: 0.8rem; opacity: 0.8; }
-    .refresh-btn { float: right; background: #3b82f6; color: #fff; border: none; padding: 7px 14px; border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer; margin-top: -4px; }
+    .refresh-btn { float: right; background: #3b82f6; color: #fff; border: none; padding: 7px 14px; border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
     .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
     .stat-card { background: #fff; border-radius: 12px; padding: 12px 10px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.07); }
     .stat-card .num { font-size: 1.5rem; font-weight: 800; color: #1e3a8a; }
@@ -23,24 +24,18 @@
     .card-header { display: flex; justify-content: space-between; align-items: center; padding: 11px 14px; border-bottom: 1px solid #e2e8f0; cursor: pointer; }
     .card-header .ch-id   { font-weight: 800; font-size: 1rem; color: #1e3a8a; }
     .card-header .ch-time { font-size: 0.75rem; color: #94a3b8; }
-    .badge { font-size: 0.75rem; font-weight: 700; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+    .badge { font-size: 0.75rem; font-weight: 700; padding: 3px 9px; border-radius: 20px; }
     .badge-ok   { background: #dcfce7; color: #14532d; }
     .badge-warn { background: #fee2e2; color: #7f1d1d; }
     .card-body { padding: 12px 14px; display: none; }
     .card-body.open { display: block; }
-
-    /* 측정값 그리드 */
     .measure-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin-bottom: 10px; }
     .m-label { font-size: 0.78rem; color: #64748b; }
     .m-val   { font-weight: 700; color: #1e293b; font-size: 0.95rem; }
-
-    /* 유속 3회 */
     .velocity-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; background: #f8fafc; border-radius: 8px; padding: 8px 10px; margin-bottom: 10px; text-align: center; font-size: 0.82rem; }
     .velocity-row .vl { color: #64748b; }
     .velocity-row .vv { font-weight: 700; color: #1e3a8a; }
     .velocity-row .avg-col { background: #dbeafe; border-radius: 6px; padding: 2px 4px; }
-
-    /* 매닝 */
     .manning-section { background: #f0fdf4; border-radius: 9px; padding: 10px 12px; margin-bottom: 10px; }
     .manning-section h4 { margin: 0 0 8px; font-size: 0.82rem; color: #047857; }
     .manning-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; font-size: 0.82rem; text-align: center; }
@@ -49,20 +44,23 @@
     .err-row { margin-top: 8px; text-align: center; font-size: 0.85rem; font-weight: 700; padding: 4px; border-radius: 6px; }
     .err-ok   { background: #dcfce7; color: #14532d; }
     .err-warn { background: #fee2e2; color: #7f1d1d; }
-
-    /* 메모 */
     .memo-box { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 8px 12px; font-size: 0.85rem; color: #78350f; margin-bottom: 10px; }
-
-    /* 사진 */
     .photo-thumb { width: 100%; max-height: 220px; object-fit: cover; border-radius: 8px; margin-bottom: 8px; display: none; cursor: pointer; }
-    .photo-link  { display: block; background: #f1f5f9; border-radius: 8px; padding: 9px 12px; text-align: center; color: #3b82f6; font-weight: 600; font-size: 0.85rem; text-decoration: none; margin-bottom: 8px; }
-    .gps-link    { display: block; background: #eff6ff; border-radius: 8px; padding: 8px 12px; color: #1d4ed8; font-size: 0.8rem; text-decoration: none; text-align: center; font-weight: 600; }
-
+    /* 지도 버튼 */
+    .map-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .map-btn { display: block; padding: 10px; border-radius: 8px; text-align: center; font-weight: 700; font-size: 0.85rem; text-decoration: none; cursor: pointer; border: none; }
+    .btn-google { background: #4285f4; color: #fff; }
+    .btn-kakao  { background: #FEE500; color: #3C1E1E; }
+    /* 카카오맵 컨테이너 */
+    .kakao-map-wrap { display: none; margin-bottom: 10px; border-radius: 10px; overflow: hidden; border: 1.5px solid #e2e8f0; }
+    .kakao-map-wrap.open { display: block; }
+    .kakao-map-container { width: 100%; height: 260px; }
     .loading { text-align: center; padding: 40px 20px; color: #64748b; }
     .spinner { width: 32px; height: 32px; border: 3px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto 12px; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .error-msg { background: #fee2e2; color: #7f1d1d; border-radius: 10px; padding: 16px; text-align: center; margin: 12px 0; }
     .empty-msg { text-align: center; padding: 30px; color: #94a3b8; }
+    .heading-badge { display: inline-block; background: #1e3a8a; color: #fff; border-radius: 6px; padding: 2px 8px; font-size: 0.78rem; font-weight: 700; margin-left: 6px; }
   </style>
 </head>
 <body>
@@ -96,8 +94,13 @@
   const CSV_URL = "https://raw.githubusercontent.com/swkim-crypto/HanGeum_River/main/data.csv";
   const n_coeff = 0.025, S_slope = 0.001, ERR_THR = 10;
   let allRows = [];
+  let kakaoLoaded = false;
+  const activeMaps = {};  // cardId → kakao map instance
 
-  // 컬럼: 조사일자,농수로ID,수로폭,수심,높이,유속1,유속2,유속3,평균유속,특이사항,위도,경도,사진링크
+  // 카카오맵 SDK 로드
+  kakao.maps.load(() => { kakaoLoaded = true; });
+
+  // 컬럼: 조사일자,농수로ID,수로폭,수심,높이,유속1,유속2,유속3,평균유속,촬영방위각,특이사항,위도,경도,사진링크
   function parseCSV(text) {
     text = text.replace(/^\uFEFF/, "");
     const lines = text.trim().split("\n").filter(l => l.trim());
@@ -114,41 +117,39 @@
         v2:       parseFloat(c[6])  || 0,
         v3:       parseFloat(c[7])  || 0,
         velocity: parseFloat(c[8])  || 0,
-        memo:     (c[9]  || "").trim(),
-        lat:      (c[10] || "").trim(),
-        lng:      (c[11] || "").trim(),
-        photo:    (c[12] || "").trim(),
+        heading:  parseFloat(c[9])  || 0,
+        memo:     (c[10] || "").trim(),
+        lat:      (c[11] || "").trim(),
+        lng:      (c[12] || "").trim(),
+        photo:    (c[13] || "").trim(),
       };
     }).filter(r => r.id);
   }
 
   function manning(r) {
-    const A  = r.width * r.depth;
-    const P  = r.width + 2 * r.depth;
-    const R  = P > 0 ? A / P : 0;
-    const Q  = A * r.velocity;
-    const Qm = (1/n_coeff) * A * Math.pow(R, 2/3) * Math.pow(S_slope, 0.5);
-    const errPct = Qm > 0 ? ((Q - Qm) / Qm) * 100 : 0;
-    return { A, P, R, Q, Qm, errPct, isWarn: Math.abs(errPct) > ERR_THR };
+    const A = r.width*r.depth, P = r.width+2*r.depth, R = P>0?A/P:0;
+    const Q = A*r.velocity;
+    const Qm = (1/n_coeff)*A*Math.pow(R,2/3)*Math.pow(S_slope,0.5);
+    const errPct = Qm>0?((Q-Qm)/Qm)*100:0;
+    return { A, P, R, Q, Qm, errPct, isWarn: Math.abs(errPct)>ERR_THR };
   }
 
   async function loadData() {
     document.getElementById("dataContainer").innerHTML = '<div class="loading"><div class="spinner"></div>데이터 불러오는 중…</div>';
     document.getElementById("lastUpdate").textContent = "불러오는 중…";
     try {
-      const res  = await fetch(CSV_URL + "?t=" + Date.now());
+      const res = await fetch(CSV_URL + "?t=" + Date.now());
       if (!res.ok) throw new Error("HTTP " + res.status);
       allRows = parseCSV(await res.text()).reverse();
       document.getElementById("lastUpdate").textContent = "업데이트: " + new Date().toLocaleString("ko-KR");
       updateSummary(); renderCards();
-    } catch (e) {
+    } catch(e) {
       document.getElementById("dataContainer").innerHTML = `<div class="error-msg">❌ 데이터를 불러올 수 없습니다.<br><small>${e.message}</small></div>`;
-      document.getElementById("lastUpdate").textContent = "불러오기 실패";
     }
   }
 
   function updateSummary() {
-    let warn = allRows.filter(r => manning(r).isWarn).length;
+    const warn = allRows.filter(r => manning(r).isWarn).length;
     document.getElementById("statTotal").textContent = allRows.length;
     document.getElementById("statOk").textContent    = allRows.length - warn;
     document.getElementById("statWarn").textContent  = warn;
@@ -159,36 +160,37 @@
     const fj = document.getElementById("filterJudge").value;
     const rows = allRows.filter(r => {
       if (ft && !r.id.toLowerCase().includes(ft)) return false;
-      if (fj) { const w = manning(r).isWarn; if (fj==="warn"&&!w) return false; if (fj==="ok"&&w) return false; }
+      if (fj) { const w=manning(r).isWarn; if(fj==="warn"&&!w) return false; if(fj==="ok"&&w) return false; }
       return true;
     });
-    if (!rows.length) { document.getElementById("dataContainer").innerHTML = '<div class="empty-msg">조건에 맞는 데이터가 없습니다.</div>'; return; }
+    if (!rows.length) { document.getElementById("dataContainer").innerHTML='<div class="empty-msg">조건에 맞는 데이터가 없습니다.</div>'; return; }
     document.getElementById("dataContainer").innerHTML = rows.map((r,i) => buildCard(r,i)).join("");
+  }
+
+  function headingToDir(deg) {
+    const dirs = ["북","북북동","북동","동북동","동","동남동","남동","남남동","남","남남서","남서","서남서","서","서북서","북서","북북서"];
+    return dirs[Math.round(deg/22.5)%16];
   }
 
   function buildCard(r, idx) {
     const m = manning(r);
-    const mapsUrl = `https://maps.google.com/?q=${r.lat},${r.lng}`;
-    const cardId  = "card-" + idx;
+    const cardId = "card-"+idx;
+    const mapId  = "kakaomap-"+idx;
+    const headingText = r.heading > 0
+      ? `<span class="heading-badge">↑ ${r.heading}° ${headingToDir(r.heading)}</span>`
+      : "";
 
-    const velocityRow = `
-      <div class="velocity-row">
-        <div><div class="vl">1차</div><div class="vv">${r.v1.toFixed(3)}</div></div>
-        <div><div class="vl">2차</div><div class="vv">${r.v2.toFixed(3)}</div></div>
-        <div><div class="vl">3차</div><div class="vv">${r.v3.toFixed(3)}</div></div>
-        <div class="avg-col"><div class="vl">평균</div><div class="vv">${r.velocity.toFixed(3)} m/s</div></div>
-      </div>`;
-
-    const memoBox = r.memo ? `<div class="memo-box">📝 ${r.memo}</div>` : "";
+    // 구글맵 URL (방위각 포함)
+    const googleUrl = `https://maps.google.com/?q=${r.lat},${r.lng}&ll=${r.lat},${r.lng}`;
 
     return `
     <div class="data-card">
       <div class="card-header" onclick="toggleCard('${cardId}')">
         <div>
-          <div class="ch-id">${r.id}</div>
+          <div class="ch-id">${r.id} ${headingText}</div>
           <div class="ch-time">${r.date}</div>
         </div>
-        <span class="badge ${m.isWarn ? 'badge-warn' : 'badge-ok'}">${m.isWarn ? '⚠ 재측 필요' : '✔ 적합'}</span>
+        <span class="badge ${m.isWarn?'badge-warn':'badge-ok'}">${m.isWarn?'⚠ 재측 필요':'✔ 적합'}</span>
       </div>
       <div class="card-body" id="${cardId}">
         <div class="measure-grid">
@@ -197,8 +199,13 @@
           <div><div class="m-label">높이 H'</div><div class="m-val">${r.height.toFixed(3)} m</div></div>
           <div><div class="m-label">실측 유량 Q</div><div class="m-val">${m.Q.toFixed(4)} m³/s</div></div>
         </div>
-        ${velocityRow}
-        ${memoBox}
+        <div class="velocity-row">
+          <div><div class="vl">1차</div><div class="vv">${r.v1.toFixed(3)}</div></div>
+          <div><div class="vl">2차</div><div class="vv">${r.v2.toFixed(3)}</div></div>
+          <div><div class="vl">3차</div><div class="vv">${r.v3.toFixed(3)}</div></div>
+          <div class="avg-col"><div class="vl">평균</div><div class="vv">${r.velocity.toFixed(3)} m/s</div></div>
+        </div>
+        ${r.memo?`<div class="memo-box">📝 ${r.memo}</div>`:""}
         <div class="manning-section">
           <h4>📐 매닝 계산 (n=${n_coeff}, S=1/${Math.round(1/S_slope)})</h4>
           <div class="manning-grid">
@@ -208,18 +215,84 @@
             <div class="mg-item" style="grid-column:1/3"><div class="mg-lbl">매닝 유량 Qm</div><div class="mg-val">${m.Qm.toFixed(4)} m³/s</div></div>
             <div class="mg-item"><div class="mg-lbl">실측 유량 Q</div><div class="mg-val">${m.Q.toFixed(4)} m³/s</div></div>
           </div>
-          <div class="err-row ${m.isWarn ? 'err-warn' : 'err-ok'}">
-            오차율 ${m.errPct.toFixed(1)}% ${m.isWarn ? '— 재측정 검토 필요' : '— 측정값 신뢰 가능'}
+          <div class="err-row ${m.isWarn?'err-warn':'err-ok'}">
+            오차율 ${m.errPct.toFixed(1)}% ${m.isWarn?'— 재측정 검토 필요':'— 측정값 신뢰 가능'}
           </div>
         </div>
-        ${r.photo ? `<img class="photo-thumb" id="img-${idx}" src="${r.photo}" onerror="this.style.display='none'" onload="this.style.display='block'" onclick="window.open('${r.photo}','_blank')">
-        <a class="photo-link" href="${r.photo}" target="_blank">📷 사진 원본 보기</a>` : ""}
-        ${r.lat && r.lng ? `<a class="gps-link" href="${mapsUrl}" target="_blank">📍 구글 지도 (${r.lat}, ${r.lng})</a>` : ""}
+        ${r.photo?`<img class="photo-thumb" id="img-${idx}" src="${r.photo}" onerror="this.style.display='none'" onload="this.style.display='block'" onclick="window.open('${r.photo}','_blank')">`:``}
+        ${r.lat&&r.lng?`
+        <div class="map-buttons">
+          <a class="map-btn btn-google" href="${googleUrl}" target="_blank">🗺 구글맵으로 보기</a>
+          <button class="map-btn btn-kakao" onclick="toggleKakaoMap('${mapId}', ${r.lat}, ${r.lng}, ${r.heading})">🗺 카카오맵 보기</button>
+        </div>
+        <div class="kakao-map-wrap" id="wrap-${mapId}">
+          <div class="kakao-map-container" id="${mapId}"></div>
+        </div>
+        `:""}
       </div>
     </div>`;
   }
 
   function toggleCard(id) { document.getElementById(id).classList.toggle("open"); }
+
+  /* ── 카카오맵 토글 + 방위각 화살표 마커 ── */
+  function toggleKakaoMap(mapId, lat, lng, heading) {
+    const wrap = document.getElementById("wrap-"+mapId);
+    if (wrap.classList.contains("open")) {
+      wrap.classList.remove("open");
+      return;
+    }
+    wrap.classList.add("open");
+
+    if (activeMaps[mapId]) return; // 이미 로드됨
+
+    if (!kakaoLoaded) {
+      setTimeout(() => toggleKakaoMap(mapId, lat, lng, heading), 300);
+      return;
+    }
+
+    const container = document.getElementById(mapId);
+    const center = new kakao.maps.LatLng(lat, lng);
+    const map = new kakao.maps.Map(container, {
+      center: center,
+      level: 4
+    });
+
+    // 기본 위치 마커
+    const marker = new kakao.maps.Marker({ position: center, map: map });
+
+    // 방위각 화살표 커스텀 오버레이
+    if (heading >= 0) {
+      const arrowContent = `
+        <div style="
+          width:40px; height:40px; background:#1e3a8a; border-radius:50%;
+          display:flex; align-items:center; justify-content:center;
+          border:3px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,0.3);
+          transform:rotate(${heading}deg);
+          font-size:22px; color:#fff; line-height:1;
+        ">↑</div>
+      `;
+      const overlay = new kakao.maps.CustomOverlay({
+        content: arrowContent,
+        position: center,
+        zIndex: 3
+      });
+      overlay.setMap(map);
+    }
+
+    // 인포윈도우
+    const infoContent = `
+      <div style="padding:8px 12px; font-size:12px; font-family:sans-serif; line-height:1.6;">
+        <b>${lat}, ${lng}</b><br>
+        촬영방위각: ${heading}° (${headingToDir(heading)})
+      </div>
+    `;
+    const infowindow = new kakao.maps.InfoWindow({ content: infoContent, removable: true });
+    kakao.maps.event.addListener(marker, 'click', () => infowindow.open(map, marker));
+
+    activeMaps[mapId] = map;
+  }
+
   loadData();
 </script>
 </body>
