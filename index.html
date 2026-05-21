@@ -21,29 +21,67 @@
     .velocity-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px; }
     .velocity-grid input { padding: 11px 8px; text-align: center; }
     .avg-display { background: #eff6ff; border: 1.5px solid #93c5fd; border-radius: 9px; padding: 10px 14px; font-size: 0.9rem; color: #1e3a8a; font-weight: 700; text-align: center; }
-    .btn-gps { background: #059669; color: #fff; border: none; width: 100%; padding: 13px; border-radius: 9px; font-weight: 700; font-size: 1rem; cursor: pointer; margin-bottom: 8px; }
-    .btn-submit { background: #1d4ed8; color: #fff; border: none; width: 100%; padding: 16px; border-radius: 10px; font-weight: 700; font-size: 1.05rem; cursor: pointer; }
-    .btn-submit:disabled { background: #93c5fd; cursor: not-allowed; }
-    .gps-display { background: #f1f5f9; padding: 10px 12px; border-radius: 8px; font-size: 0.84rem; font-family: monospace; color: #475569; line-height: 1.9; }
-    .gps-ok  { color: #065f46; font-weight: 700; }
-    .gps-bad { color: #b91c1c; font-weight: 700; }
-    /* 방위각 표시 */
-    .compass-row { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
-    .compass-circle { width: 44px; height: 44px; border-radius: 50%; background: #1e3a8a; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .compass-arrow { font-size: 22px; transition: transform 0.3s; }
-    .compass-val { font-size: 0.88rem; color: #1e3a8a; font-weight: 700; font-family: monospace; }
     #manningBox { display: none; background: #ecfdf5; border: 1.5px solid #6ee7b7; border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
     .manning-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; font-size: 0.9rem; }
     .manning-grid .label { color: #047857; font-weight: 600; }
     .manning-grid .val   { color: #064e3b; font-weight: 700; font-family: monospace; }
-    #photoPreview { display: none; width: 100%; max-height: 180px; object-fit: cover; border-radius: 8px; margin-top: 8px; border: 1.5px solid #cbd5e1; }
+    .section-label { font-size: 0.78rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; margin-top: 4px; }
+
+    /* 사진 촬영 영역 */
+    .photo-area { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 16px; text-align: center; background: #f8fafc; cursor: pointer; transition: border-color .2s; }
+    .photo-area:hover { border-color: #3b82f6; }
+    .photo-area.has-photo { border-style: solid; border-color: #059669; background: #f0fdf4; }
+    .photo-icon { font-size: 2.5rem; margin-bottom: 6px; }
+    .photo-label-text { font-size: 0.9rem; color: #64748b; font-weight: 600; }
+    #photoPreview { display: none; width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; margin-top: 10px; }
+
+    /* GPS 상태 표시 (팝업용, 평소엔 숨김) */
+    .gps-status-bar { background: #f1f5f9; padding: 8px 12px; border-radius: 8px; font-size: 0.82rem; font-family: monospace; color: #475569; margin-top: 8px; display: none; }
+    .gps-ok  { color: #065f46; font-weight: 700; }
+    .gps-bad { color: #b91c1c; font-weight: 700; }
+
+    /* 확인 팝업 오버레이 */
+    .popup-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55); z-index: 1000;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .popup-overlay.open { display: flex; }
+    .popup-box {
+      background: #fff; border-radius: 16px; width: 100%; max-width: 380px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25); overflow: hidden;
+    }
+    .popup-header { background: #1e3a8a; color: #fff; padding: 14px 18px; font-weight: 700; font-size: 1rem; }
+    .popup-body { padding: 16px 18px; }
+    .popup-photo { width: 100%; max-height: 160px; object-fit: cover; border-radius: 8px; margin-bottom: 14px; }
+    .popup-info-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.88rem; }
+    .popup-info-row:last-child { border-bottom: none; }
+    .popup-info-icon { font-size: 1.1rem; width: 24px; text-align: center; flex-shrink: 0; }
+    .popup-info-label { color: #64748b; width: 70px; flex-shrink: 0; }
+    .popup-info-val { font-weight: 700; color: #1e293b; font-family: monospace; }
+    .popup-info-val.loading { color: #94a3b8; font-style: italic; font-family: inherit; }
+    .popup-info-val.ready  { color: #059669; }
+    .popup-info-val.error  { color: #dc2626; }
+
+    /* 팝업 나침반 */
+    .popup-compass { display: flex; align-items: center; gap: 10px; }
+    .compass-circle { width: 36px; height: 36px; border-radius: 50%; background: #1e3a8a; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .compass-arrow { font-size: 20px; color: #fff; transition: transform 0.3s; display: inline-block; }
+
+    .popup-footer { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px 18px; background: #f8fafc; }
+    .btn-cancel  { background: #e2e8f0; color: #475569; border: none; padding: 13px; border-radius: 9px; font-weight: 700; font-size: 0.95rem; cursor: pointer; }
+    .btn-confirm { background: #1d4ed8; color: #fff; border: none; padding: 13px; border-radius: 9px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: background .2s; }
+    .btn-confirm:disabled { background: #93c5fd; cursor: not-allowed; }
+    .btn-confirm.ready { background: #059669; }
+
+    /* 전송 상태 */
     #statusMsg { display: none; text-align: center; padding: 13px; border-radius: 9px; font-weight: 600; font-size: 0.95rem; margin-top: 10px; }
     .msg-loading { background: #fef9c3; color: #713f12; }
     .msg-ok      { background: #dcfce7; color: #14532d; }
     .msg-err     { background: #fee2e2; color: #7f1d1d; }
     .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #fde68a; border-top-color: #92400e; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 6px; }
+    .spinner-sm { display: inline-block; width: 12px; height: 12px; border: 2px solid #cbd5e1; border-top-color: #3b82f6; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 4px; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .section-label { font-size: 0.78rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; margin-top: 4px; }
   </style>
 </head>
 <body>
@@ -91,49 +129,77 @@
     <textarea id="memo" placeholder="예: 수초 많음, 부유물 있음, 호안 손상 등"></textarea>
   </div>
 
+  <!-- 사진 촬영 → 팝업 트리거 -->
   <div class="form-group">
     <label>현장 사진 촬영</label>
-    <input type="file" id="photo" accept="image/*" capture="environment" required>
-    <img id="photoPreview" alt="사진 미리보기">
-  </div>
-
-  <div class="form-group">
-    <button type="button" class="btn-gps" onclick="getGPS()">📍 현재 위치 + 촬영방향 가져오기</button>
-    <div class="gps-display">
-      위도: <span id="latDisplay" class="gps-bad">미취득</span><br>
-      경도: <span id="lngDisplay" class="gps-bad">미취득</span><br>
-      <div class="compass-row">
-        <div class="compass-circle">
-          <span class="compass-arrow" id="compassArrow">↑</span>
-        </div>
-        <span class="compass-val">촬영방위각: <span id="headingDisplay" class="gps-bad">미취득</span></span>
-      </div>
+    <div class="photo-area" id="photoArea" onclick="document.getElementById('photo').click()">
+      <div class="photo-icon">📷</div>
+      <div class="photo-label-text" id="photoLabelText">탭하여 사진 촬영</div>
+      <img id="photoPreview" alt="사진 미리보기">
     </div>
+    <input type="file" id="photo" accept="image/*" capture="environment" style="display:none">
   </div>
 
-  <button id="submitBtn" class="btn-submit" onclick="submitForm()">📤 사무실 엑셀로 데이터 전송</button>
   <div id="statusMsg"></div>
 </div>
 
 <div class="card" style="font-size:0.84rem; color:#64748b; line-height:1.8;">
   <strong style="color:#1e3a8a;">💡 사용 안내</strong><br>
-  ① ID·단면 입력 → ② 유속 3회 → ③ 메모 → ④ 사진 → ⑤ 위치+방향 → ⑥ 전송<br>
-  📷 사진 촬영 후 [위치+방향 가져오기] 누르면 그 순간 방위각 기록
+  ① ID·단면 입력 → ② 유속 3회 → ③ 메모 → ④ 사진 촬영<br>
+  📷 사진 촬영 즉시 GPS+방위각 자동 취득 → 확인 후 바로 전송
+</div>
+
+<!-- ── 확인 팝업 ──────────────────────────────────── -->
+<div class="popup-overlay" id="popupOverlay">
+  <div class="popup-box">
+    <div class="popup-header">📍 위치·방향 확인 및 전송</div>
+    <div class="popup-body">
+      <img class="popup-photo" id="popupPhoto" src="" alt="현장사진">
+
+      <div class="popup-info-row">
+        <span class="popup-info-icon">📍</span>
+        <span class="popup-info-label">위도</span>
+        <span class="popup-info-val loading" id="popupLat"><span class="spinner-sm"></span>취득 중…</span>
+      </div>
+      <div class="popup-info-row">
+        <span class="popup-info-icon">📍</span>
+        <span class="popup-info-label">경도</span>
+        <span class="popup-info-val loading" id="popupLng"><span class="spinner-sm"></span>취득 중…</span>
+      </div>
+      <div class="popup-info-row">
+        <span class="popup-info-icon">🧭</span>
+        <span class="popup-info-label">촬영방향</span>
+        <div class="popup-compass">
+          <div class="compass-circle"><span class="compass-arrow" id="popupArrow">↑</span></div>
+          <span class="popup-info-val loading" id="popupHeading"><span class="spinner-sm"></span>취득 중…</span>
+        </div>
+      </div>
+    </div>
+    <div class="popup-footer">
+      <button class="btn-cancel" onclick="closePopup()">✕ 취소</button>
+      <button class="btn-confirm" id="btnConfirm" disabled onclick="confirmAndUpload()">
+        <span id="btnConfirmText">⏳ 좌표 취득 중…</span>
+      </button>
+    </div>
+  </div>
 </div>
 
 <script>
   const SERVER_URL = "https://hangeum-river.onrender.com/upload";
   const n = 0.025, S = 0.001;
-  let lat = "", lng = "", heading = "";
-  let currentHeading = null;
 
-  /* ── DeviceOrientation (나침반) ── */
+  let currentLat     = null;
+  let currentLng     = null;
+  let currentHeading = null;
+  let gpsReady       = false;
+  let orientationListener = null;
+
+  /* ── 나침반 시작 ── */
   function startCompass() {
     if (typeof DeviceOrientationEvent !== "undefined" &&
         typeof DeviceOrientationEvent.requestPermission === "function") {
-      // iOS 13+
       DeviceOrientationEvent.requestPermission()
-        .then(state => { if (state === "granted") listenOrientation(); })
+        .then(s => { if (s === "granted") listenOrientation(); })
         .catch(console.error);
     } else if (window.DeviceOrientationEvent) {
       listenOrientation();
@@ -141,58 +207,27 @@
   }
 
   function listenOrientation() {
-    window.addEventListener("deviceorientationabsolute", handleOrientation, true);
-    window.addEventListener("deviceorientation", handleOrientation, true);
+    orientationListener = (e) => {
+      let deg = null;
+      if (e.webkitCompassHeading !== undefined) {
+        deg = e.webkitCompassHeading;
+      } else if (e.absolute && e.alpha !== null) {
+        deg = (360 - e.alpha) % 360;
+      } else if (e.alpha !== null) {
+        deg = (360 - e.alpha) % 360;
+      }
+      if (deg !== null) {
+        currentHeading = Math.round(deg);
+        // 팝업 화살표 실시간 업데이트
+        const arrow = document.getElementById("popupArrow");
+        if (arrow) arrow.style.transform = `rotate(${currentHeading}deg)`;
+      }
+    };
+    window.addEventListener("deviceorientationabsolute", orientationListener, true);
+    window.addEventListener("deviceorientation", orientationListener, true);
   }
 
-  function handleOrientation(e) {
-    let deg = null;
-    if (e.absolute && e.alpha !== null) {
-      deg = (360 - e.alpha) % 360; // 자북 기준 변환
-    } else if (e.webkitCompassHeading !== undefined) {
-      deg = e.webkitCompassHeading; // iOS Safari
-    } else if (e.alpha !== null) {
-      deg = (360 - e.alpha) % 360;
-    }
-    if (deg !== null) {
-      currentHeading = Math.round(deg);
-      document.getElementById("compassArrow").style.transform = `rotate(${currentHeading}deg)`;
-    }
-  }
-
-  /* ── GPS + 방위각 취득 ── */
-  function getGPS() {
-    startCompass();
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        lat = pos.coords.latitude.toFixed(6);
-        lng = pos.coords.longitude.toFixed(6);
-        // GPS 자체 heading (이동 중일 때만 유효)
-        const gpsHeading = pos.coords.heading;
-
-        // 나침반 우선, GPS heading 보조
-        if (currentHeading !== null) {
-          heading = currentHeading.toString();
-        } else if (gpsHeading !== null && !isNaN(gpsHeading)) {
-          heading = Math.round(gpsHeading).toString();
-        } else {
-          heading = "0";
-        }
-
-        const ld = document.getElementById("latDisplay");
-        const lgd = document.getElementById("lngDisplay");
-        const hd = document.getElementById("headingDisplay");
-        ld.textContent = lat;   ld.className = "gps-ok";
-        lgd.textContent = lng;  lgd.className = "gps-ok";
-        hd.textContent = heading + "° (" + headingToKorean(parseInt(heading)) + ")";
-        hd.className = "gps-ok";
-      },
-      err => alert("GPS 오류: " + err.message),
-      { enableHighAccuracy: true, timeout: 15000 }
-    );
-  }
-
-  function headingToKorean(deg) {
+  function headingToDir(deg) {
     const dirs = ["북","북북동","북동","동북동","동","동남동","남동","남남동","남","남남서","남서","서남서","서","서북서","북서","북북서"];
     return dirs[Math.round(deg / 22.5) % 16];
   }
@@ -227,13 +262,155 @@
     box.style.display = "block";
   }
 
-  /* ── 사진 미리보기 ── */
+  /* ── 사진 선택 → 팝업 오픈 ── */
   document.getElementById("photo").addEventListener("change", e => {
     const file = e.target.files[0];
-    const prev = document.getElementById("photoPreview");
-    if (file) { prev.src = URL.createObjectURL(file); prev.style.display = "block"; }
-    else prev.style.display = "none";
+    if (!file) return;
+
+    // 입력값 검증
+    const channelId = document.getElementById("channelId").value.trim();
+    const width   = document.getElementById("width").value;
+    const depth   = document.getElementById("depth").value;
+    const vVals   = ["v1","v2","v3"].map(id => parseFloat(document.getElementById(id).value)).filter(v => !isNaN(v) && v > 0);
+    if (!channelId || !width || !depth || vVals.length === 0) {
+      alert("사진 촬영 전에 수로ID, 폭, 수심, 유속(최소 1회)을 먼저 입력해주세요.");
+      document.getElementById("photo").value = "";
+      return;
+    }
+
+    // 사진 미리보기 업데이트
+    const previewUrl = URL.createObjectURL(file);
+    document.getElementById("photoPreview").src = previewUrl;
+    document.getElementById("photoPreview").style.display = "block";
+    document.getElementById("photoArea").classList.add("has-photo");
+    document.getElementById("photoLabelText").textContent = "✔ 사진 선택됨 (탭하여 변경)";
+    document.getElementById("popupPhoto").src = previewUrl;
+
+    // 팝업 초기화 후 오픈
+    openPopup();
   });
+
+  function openPopup() {
+    // 팝업 초기 상태
+    gpsReady = false;
+    currentLat = null; currentLng = null;
+
+    setPopupField("popupLat",     "loading", "취득 중…");
+    setPopupField("popupLng",     "loading", "취득 중…");
+    setPopupField("popupHeading", "loading", "취득 중…");
+
+    const btn = document.getElementById("btnConfirm");
+    btn.disabled = true;
+    btn.className = "btn-confirm";
+    document.getElementById("btnConfirmText").textContent = "⏳ 좌표 취득 중…";
+
+    document.getElementById("popupOverlay").classList.add("open");
+
+    // 나침반 시작
+    startCompass();
+
+    // GPS 취득
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        currentLat = pos.coords.latitude.toFixed(6);
+        currentLng = pos.coords.longitude.toFixed(6);
+
+        // GPS heading 보조 (이동 중일 때)
+        if (currentHeading === null && pos.coords.heading !== null && !isNaN(pos.coords.heading)) {
+          currentHeading = Math.round(pos.coords.heading);
+        }
+        if (currentHeading === null) currentHeading = 0;
+
+        setPopupField("popupLat", "ready", currentLat);
+        setPopupField("popupLng", "ready", currentLng);
+        setPopupField("popupHeading", "ready",
+          `${currentHeading}° (${headingToDir(currentHeading)})`);
+
+        document.getElementById("popupArrow").style.transform = `rotate(${currentHeading}deg)`;
+
+        // 확인 버튼 활성화
+        gpsReady = true;
+        btn.disabled = false;
+        btn.className = "btn-confirm ready";
+        document.getElementById("btnConfirmText").textContent = "✔ 확인 및 전송";
+      },
+      err => {
+        setPopupField("popupLat",     "error", "취득 실패");
+        setPopupField("popupLng",     "error", "취득 실패");
+        setPopupField("popupHeading", "error", "취득 실패");
+        // GPS 실패해도 수동 진행 허용
+        currentLat = "0"; currentLng = "0"; currentHeading = 0;
+        btn.disabled = false;
+        btn.className = "btn-confirm";
+        document.getElementById("btnConfirmText").textContent = "⚠ GPS 없이 전송";
+      },
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  }
+
+  function setPopupField(id, state, text) {
+    const el = document.getElementById(id);
+    el.className = "popup-info-val " + state;
+    el.innerHTML = state === "loading"
+      ? `<span class="spinner-sm"></span>${text}`
+      : text;
+  }
+
+  function closePopup() {
+    document.getElementById("popupOverlay").classList.remove("open");
+    if (orientationListener) {
+      window.removeEventListener("deviceorientationabsolute", orientationListener, true);
+      window.removeEventListener("deviceorientation", orientationListener, true);
+      orientationListener = null;
+    }
+  }
+
+  /* ── 확인 및 전송 ── */
+  async function confirmAndUpload() {
+    closePopup();
+
+    const channelId  = document.getElementById("channelId").value.trim();
+    const width      = document.getElementById("width").value;
+    const depth      = document.getElementById("depth").value;
+    const height     = document.getElementById("height").value || "0";
+    const v1 = document.getElementById("v1").value;
+    const v2 = document.getElementById("v2").value;
+    const v3 = document.getElementById("v3").value;
+    const memo  = document.getElementById("memo").value.trim();
+    const photo = document.getElementById("photo").files[0];
+    const vVals = [v1,v2,v3].map(parseFloat).filter(v => !isNaN(v) && v > 0);
+    const avgVelocity = (vVals.reduce((a,b)=>a+b,0)/vVals.length).toFixed(3);
+
+    showStatus("loading", '<span class="spinner"></span>서버 전송 중… (최대 40초)');
+
+    const formData = new FormData();
+    formData.append("channel_id", channelId);
+    formData.append("width",     width);
+    formData.append("depth",     depth);
+    formData.append("height",    height);
+    formData.append("v1",        v1||"0");
+    formData.append("v2",        v2||"0");
+    formData.append("v3",        v3||"0");
+    formData.append("velocity",  avgVelocity);
+    formData.append("heading",   currentHeading !== null ? currentHeading.toString() : "0");
+    formData.append("memo",      memo);
+    formData.append("latitude",  currentLat || "0");
+    formData.append("longitude", currentLng || "0");
+    formData.append("image",     photo);
+
+    try {
+      const res  = await fetch(SERVER_URL, { method:"POST", body:formData });
+      const data = await res.json();
+      if (res.ok) {
+        showStatus("ok", "✅ 전송 완료!");
+        resetForm();
+      } else {
+        showStatus("err", "❌ 서버 오류: "+(data.detail||"알 수 없는 오류"));
+      }
+    } catch(err) {
+      showStatus("err", "❌ 전송 실패: 네트워크를 확인하세요.");
+    }
+  }
 
   function showStatus(type, html) {
     const el = document.getElementById("statusMsg");
@@ -241,64 +418,16 @@
     if (type !== "loading") setTimeout(() => { el.style.display = "none"; }, 6000);
   }
 
-  /* ── 전송 ── */
-  async function submitForm() {
-    const channelId = document.getElementById("channelId").value.trim();
-    const width   = document.getElementById("width").value;
-    const depth   = document.getElementById("depth").value;
-    const height  = document.getElementById("height").value || "0";
-    const v1 = document.getElementById("v1").value;
-    const v2 = document.getElementById("v2").value;
-    const v3 = document.getElementById("v3").value;
-    const memo  = document.getElementById("memo").value.trim();
-    const photo = document.getElementById("photo").files[0];
-    const vVals = [v1,v2,v3].map(parseFloat).filter(v => !isNaN(v) && v > 0);
-
-    if (!channelId || !width || !depth || vVals.length === 0) { alert("수로ID, 폭, 수심, 유속(최소 1회)을 입력해주세요."); return; }
-    if (!photo) { alert("현장 사진을 촬영해주세요."); return; }
-    if (!lat || !lng) { alert("📍 위치 좌표를 먼저 가져와주세요."); return; }
-
-    const avgVelocity = (vVals.reduce((a,b)=>a+b,0)/vVals.length).toFixed(3);
-    const btn = document.getElementById("submitBtn");
-    btn.disabled = true;
-    showStatus("loading", '<span class="spinner"></span>서버 전송 중… (최대 40초)');
-
-    const formData = new FormData();
-    formData.append("channel_id", channelId);
-    formData.append("width",    width);
-    formData.append("depth",    depth);
-    formData.append("height",   height);
-    formData.append("v1",       v1||"0");
-    formData.append("v2",       v2||"0");
-    formData.append("v3",       v3||"0");
-    formData.append("velocity", avgVelocity);
-    formData.append("heading",  heading||"0");
-    formData.append("memo",     memo);
-    formData.append("latitude", lat);
-    formData.append("longitude",lng);
-    formData.append("image",    photo);
-
-    try {
-      const res  = await fetch(SERVER_URL, { method:"POST", body:formData });
-      const data = await res.json();
-      if (res.ok) {
-        showStatus("ok", "✅ 전송 완료!");
-        ["channelId","width","depth","height","v1","v2","v3","memo"].forEach(id => document.getElementById(id).value = "");
-        document.getElementById("avgDisplay").textContent = "— m/s";
-        document.getElementById("manningBox").style.display = "none";
-        const pi = document.getElementById("photo"); pi.value = ""; pi.dispatchEvent(new Event("change"));
-        lat=""; lng=""; heading=""; currentHeading=null;
-        ["latDisplay","lngDisplay"].forEach(id => { const el=document.getElementById(id); el.textContent="미취득"; el.className="gps-bad"; });
-        const hd = document.getElementById("headingDisplay"); hd.textContent="미취득"; hd.className="gps-bad";
-        document.getElementById("compassArrow").style.transform = "rotate(0deg)";
-      } else {
-        showStatus("err", "❌ 서버 오류: "+(data.detail||"알 수 없는 오류"));
-      }
-    } catch(err) {
-      showStatus("err", "❌ 전송 실패: 네트워크를 확인하세요.");
-    } finally {
-      btn.disabled = false;
-    }
+  function resetForm() {
+    ["channelId","width","depth","height","v1","v2","v3","memo"].forEach(id =>
+      document.getElementById(id).value = "");
+    document.getElementById("avgDisplay").textContent = "— m/s";
+    document.getElementById("manningBox").style.display = "none";
+    document.getElementById("photo").value = "";
+    document.getElementById("photoPreview").style.display = "none";
+    document.getElementById("photoArea").classList.remove("has-photo");
+    document.getElementById("photoLabelText").textContent = "탭하여 사진 촬영";
+    currentLat = null; currentLng = null; currentHeading = null;
   }
 </script>
 </body>
