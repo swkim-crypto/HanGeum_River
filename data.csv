@@ -1,3 +1,4 @@
 조사일자,농수로ID,수로폭(m),수심(m),높이(m),유속1(m/s),유속2(m/s),유속3(m/s),평균유속(m/s),특이사항,위도,경도,사진링크
 2026-05-20 09:35:45,테스트1,3.000,0.500,1.300,0.600,0.800,0.600,0.667,이상무,37.426113,126.992140,https://raw.githubusercontent.com/swkim-crypto/HanGeum_River/main/photos/20260520093545_테스트1.jpg
 2026-05-21 02:33:47,001,1.000,0.800,1.100,0.400,0.300,0.400,0.367,225,,37.426107,126.992101,https://raw.githubusercontent.com/swkim-crypto/HanGeum_River/main/photos/20260521023347_001.jpg
+2026-05-21 02:34:59,002,0.800,1.000,0.600,0.500,0.400,0.500,0.467,166,,37.426088,126.992121,https://raw.githubusercontent.com/swkim-crypto/HanGeum_River/main/photos/20260521023459_002.jpg
