@@ -520,11 +520,37 @@
     await sendToServer(r.fd);
   }
 
+  /* ── GPS 취득 (Promise) ── */
+  function acquireGPS() {
+    return new Promise(resolve => {
+      if (!navigator.geolocation) { resolve(false); return; }
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          currentLat = pos.coords.latitude.toFixed(6);
+          currentLng = pos.coords.longitude.toFixed(6);
+          if (currentHeading === null && pos.coords.heading !== null && !isNaN(pos.coords.heading))
+            currentHeading = Math.round(pos.coords.heading);
+          resolve(true);
+        },
+        () => resolve(false),
+        { enableHighAccuracy: true, timeout: 15000 }
+      );
+    });
+  }
+
   /* ── 바로 전송 (사진/ID/단면 없어도 유속만 있으면 OK) ── */
   async function directUpload() {
-    const r = collectFormData();
+    const r = collectFormData();          // 먼저 유속 입력 검증
     if (!r.ok) { alert(r.msg); return; }
-    await sendToServer(r.fd);
+    // 좌표가 아직 없으면 지금 취득 (버튼 탭 = 사용자 제스처 → iOS 권한 OK)
+    if (currentLat === null || currentLng === null || currentLat === "0") {
+      showStatus("loading", '<span class="spinner"></span>📍 좌표 취득 중…');
+      startCompass();                     // iOS 나침반 권한 요청
+      await acquireGPS();
+    }
+    const r2 = collectFormData();         // 취득한 좌표 반영해 다시 수집
+    if (!r2.ok) { alert(r2.msg); return; }
+    await sendToServer(r2.fd);
   }
 
   function showStatus(type, html) {
