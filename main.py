@@ -13,8 +13,8 @@ GITHUB_TOKEN = os.getenv("GH_TOKEN")
 REPO_NAME    = os.getenv("GH_REPO")
 CSV_PATH     = "data.csv"
 
-# 촬영방위각 컬럼 추가
-CSV_HEADER = "조사일자,농수로ID,수로폭(m),수심(m),높이(m),유속1(m/s),유속2(m/s),유속3(m/s),평균유속(m/s),촬영방위각(°),특이사항,위도,경도,사진링크\n"
+# 촬영방위각 + 사용장비/rpm/n 컬럼 추가
+CSV_HEADER = "조사일자,농수로ID,수로폭(m),수심(m),높이(m),유속1(m/s),유속2(m/s),유속3(m/s),평균유속(m/s),촬영방위각(°),특이사항,위도,경도,사진링크,장비,rpm1,rpm2,rpm3,n1,n2,n3\n"
 
 def normalize(text: str) -> str:
     return unicodedata.normalize("NFC", text)
@@ -37,7 +37,14 @@ async def upload_data(
     memo:       str        = Form(""),
     latitude:   str        = Form(...),
     longitude:  str        = Form(...),
-    image:      UploadFile = File(...)
+    image:      UploadFile = File(...),
+    device:     str        = Form(""),
+    rpm1:       str        = Form(""),
+    rpm2:       str        = Form(""),
+    rpm3:       str        = Form(""),
+    n1:         str        = Form(""),
+    n2:         str        = Form(""),
+    n3:         str        = Form("")
 ):
     try:
         g    = Github(GITHUB_TOKEN)
@@ -64,11 +71,18 @@ async def upload_data(
             sha          = None
 
         memo_safe = normalize(memo).replace(",", ";").replace("\n", " ")
+
+        # 사용장비/rpm/n 정리 (쉼표 제거)
+        device_safe = normalize(device).replace(",", " ").strip()
+        rpm1_s, rpm2_s, rpm3_s = (str(x).replace(",", "").strip() for x in (rpm1, rpm2, rpm3))
+        n1_s,   n2_s,   n3_s   = (str(x).replace(",", "").strip() for x in (n1, n2, n3))
+
         new_row = (
             f"{now},{normalize(channel_id)},"
             f"{width:.3f},{depth:.3f},{height:.3f},"
             f"{v1:.3f},{v2:.3f},{v3:.3f},{velocity:.3f},"
-            f"{heading:.0f},{memo_safe},{latitude},{longitude},{image_url}\n"
+            f"{heading:.0f},{memo_safe},{latitude},{longitude},{image_url},"
+            f"{device_safe},{rpm1_s},{rpm2_s},{rpm3_s},{n1_s},{n2_s},{n3_s}\n"
         )
         updated_str = existing_str + new_row
 

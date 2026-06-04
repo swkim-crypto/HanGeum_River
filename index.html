@@ -82,6 +82,16 @@
     .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #fde68a; border-top-color: #92400e; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 6px; }
     .spinner-sm { display: inline-block; width: 12px; height: 12px; border: 2px solid #cbd5e1; border-top-color: #3b82f6; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 4px; }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* 사용 장비 토글 */
+    .device-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .device-btn { padding: 12px; border: 1.5px solid #cbd5e1; border-radius: 9px; background: #f8fafc; font-size: 0.95rem; font-weight: 700; color: #64748b; cursor: pointer; font-family: inherit; transition: all .15s; }
+    .device-btn.active { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+    /* rpm 환산 결과 표시 */
+    .rpm-readout { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 8px 0; text-align: center; }
+    .rpm-readout > div { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 6px 4px; }
+    .rpm-readout .rl { display: block; font-size: 0.72rem; color: #64748b; margin-bottom: 2px; }
+    .rpm-readout .rv { display: block; font-weight: 700; color: #1e3a8a; font-size: 0.9rem; font-family: monospace; }
   </style>
 </head>
 <body>
@@ -101,13 +111,42 @@
     <div><label>높이 H' (m)</label><input type="number" id="height" step="0.001" placeholder="0.000"></div>
   </div>
 
+  <!-- 사용 장비 선택 -->
   <div class="form-group">
-    <label>실측 유속 3회 (m/s)</label>
-    <div class="velocity-grid">
-      <input type="number" id="v1" step="0.001" placeholder="1차" oninput="updateVelocity()">
-      <input type="number" id="v2" step="0.001" placeholder="2차" oninput="updateVelocity()">
-      <input type="number" id="v3" step="0.001" placeholder="3차" oninput="updateVelocity()">
+    <label>사용 장비 (유속계)</label>
+    <div class="device-toggle">
+      <button type="button" class="device-btn active" id="devSaman" onclick="setDevice('saman')">삼안</button>
+      <button type="button" class="device-btn" id="devHankyong" onclick="setDevice('hankyong')">한경대</button>
     </div>
+  </div>
+
+  <div class="form-group">
+    <!-- 삼안: 유속 직접 입력 -->
+    <div id="velocityGroup">
+      <label>실측 유속 3회 (m/s)</label>
+      <div class="velocity-grid">
+        <input type="number" id="v1" step="0.001" placeholder="1차" oninput="updateVelocity()">
+        <input type="number" id="v2" step="0.001" placeholder="2차" oninput="updateVelocity()">
+        <input type="number" id="v3" step="0.001" placeholder="3차" oninput="updateVelocity()">
+      </div>
+    </div>
+
+    <!-- 한경대: rpm 입력 → 유속 자동 환산 -->
+    <div id="rpmGroup" style="display:none;">
+      <label>측정 rpm 3회 → 유속 자동 환산</label>
+      <div class="velocity-grid">
+        <input type="number" id="rpm1" step="0.1" placeholder="rpm 1차" oninput="updateVelocity()">
+        <input type="number" id="rpm2" step="0.1" placeholder="rpm 2차" oninput="updateVelocity()">
+        <input type="number" id="rpm3" step="0.1" placeholder="rpm 3차" oninput="updateVelocity()">
+      </div>
+      <div class="rpm-readout">
+        <div><span class="rl">1차 유속</span><span class="rv" id="conv1">—</span></div>
+        <div><span class="rl">2차 유속</span><span class="rv" id="conv2">—</span></div>
+        <div><span class="rl">3차 유속</span><span class="rv" id="conv3">—</span></div>
+      </div>
+      <div style="font-size:0.72rem;color:#6b7280;margin:0 0 8px;">n = rpm ÷ 30 → 유속 환산식 적용</div>
+    </div>
+
     <div class="avg-display">평균 유속: <span id="avgDisplay">— m/s</span></div>
   </div>
 
@@ -145,7 +184,7 @@
 
 <div class="card" style="font-size:0.84rem; color:#64748b; line-height:1.8;">
   <strong style="color:#1e3a8a;">💡 사용 안내</strong><br>
-  ① ID·단면 입력 → ② 유속 3회 → ③ 메모 → ④ 사진 촬영<br>
+  ① ID·단면 입력 → ② 장비 선택(삼안=유속 / 한경대=rpm) → ③ 3회 측정 → ④ 메모 → ⑤ 사진 촬영<br>
   📷 사진 촬영 즉시 GPS+방위각 자동 취득 → 확인 후 바로 전송
 </div>
 
@@ -232,10 +271,54 @@
     return dirs[Math.round(deg / 22.5) % 16];
   }
 
+  /* ── 사용 장비 ── */
+  let device = "saman";  // "saman" | "hankyong"
+
+  /* rpm → 유속 환산 (n = rpm/30) */
+  function rpmToVelocity(rpm) {
+    if (isNaN(rpm) || rpm <= 0) return null;
+    const nVal = rpm / 30;
+    return (nVal > 0 && nVal < 1.74)
+      ? 0.0123 + 0.2473 * nVal
+      : -0.0042 + 0.2568 * nVal;
+  }
+
+  function setDevice(d) {
+    device = d;
+    const isHan = (d === "hankyong");
+    document.getElementById("devSaman").classList.toggle("active", !isHan);
+    document.getElementById("devHankyong").classList.toggle("active", isHan);
+    document.getElementById("velocityGroup").style.display = isHan ? "none" : "block";
+    document.getElementById("rpmGroup").style.display     = isHan ? "block" : "none";
+    updateVelocity();
+  }
+
+  /* 현재 장비 기준 유속 3개 (한경대는 환산값) */
+  function currentVelocities() {
+    if (device === "hankyong") {
+      return ["rpm1","rpm2","rpm3"].map(id =>
+        rpmToVelocity(parseFloat(document.getElementById(id).value)));
+    }
+    return ["v1","v2","v3"].map(id => {
+      const v = parseFloat(document.getElementById(id).value);
+      return (isNaN(v) || v <= 0) ? null : v;
+    });
+  }
+
   /* ── 평균 유속 ── */
   function updateVelocity() {
-    const vals = ["v1","v2","v3"].map(id => parseFloat(document.getElementById(id).value)).filter(v => !isNaN(v) && v > 0);
-    const avg = vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : null;
+    const vels = currentVelocities();
+
+    // 한경대: 차수별 환산 유속 표시
+    if (device === "hankyong") {
+      ["conv1","conv2","conv3"].forEach((id,i) => {
+        document.getElementById(id).textContent =
+          vels[i] !== null ? vels[i].toFixed(3) + " m/s" : "—";
+      });
+    }
+
+    const valid = vels.filter(v => v !== null && !isNaN(v) && v > 0);
+    const avg = valid.length ? valid.reduce((a,b) => a+b, 0) / valid.length : null;
     document.getElementById("avgDisplay").textContent = avg ? avg.toFixed(3) + " m/s" : "— m/s";
     updateManning();
   }
@@ -244,7 +327,7 @@
   function updateManning() {
     const B = parseFloat(document.getElementById("width").value);
     const H = parseFloat(document.getElementById("depth").value);
-    const vals = ["v1","v2","v3"].map(id => parseFloat(document.getElementById(id).value)).filter(v => !isNaN(v) && v > 0);
+    const vals = currentVelocities().filter(v => v !== null && !isNaN(v) && v > 0);
     const V = vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : 0;
     const box = document.getElementById("manningBox");
     if (!B || !H || !V) { box.style.display = "none"; return; }
@@ -361,21 +444,34 @@
     const channelId  = document.getElementById("channelId").value.trim();
     const _width  = document.getElementById("width").value;
     const _depth  = document.getElementById("depth").value;
-    const _vVals  = ["v1","v2","v3"].map(id => parseFloat(document.getElementById(id).value)).filter(v => !isNaN(v) && v > 0);
-    if (!channelId || !_width || !_depth || _vVals.length === 0) {
-      alert("수로ID, 폭, 수심, 유속(최소 1회)을 입력해주세요.");
+    const vels    = currentVelocities();
+    const validVels = vels.filter(v => v !== null && !isNaN(v) && v > 0);
+    if (!channelId || !_width || !_depth || validVels.length === 0) {
+      alert(device === "hankyong"
+        ? "수로ID, 폭, 수심, rpm(최소 1회)을 입력해주세요."
+        : "수로ID, 폭, 수심, 유속(최소 1회)을 입력해주세요.");
       return;
     }
-    const width      = document.getElementById("width").value;
-    const depth      = document.getElementById("depth").value;
+    const width      = _width;
+    const depth      = _depth;
     const height     = document.getElementById("height").value || "0";
-    const v1 = document.getElementById("v1").value;
-    const v2 = document.getElementById("v2").value;
-    const v3 = document.getElementById("v3").value;
+
+    // 최종 유속 3개 (한경대는 환산값, 빈 측정은 0)
+    const v1 = vels[0] !== null ? vels[0].toFixed(3) : "0";
+    const v2 = vels[1] !== null ? vels[1].toFixed(3) : "0";
+    const v3 = vels[2] !== null ? vels[2].toFixed(3) : "0";
+
+    // rpm / n — 한경대만 값, 삼안은 빈칸
+    let rpm1="", rpm2="", rpm3="", n1="", n2="", n3="";
+    if (device === "hankyong") {
+      const rv = ["rpm1","rpm2","rpm3"].map(id => parseFloat(document.getElementById(id).value));
+      [rpm1,rpm2,rpm3] = rv.map(r => (!isNaN(r) && r>0) ? r.toString() : "");
+      [n1,n2,n3]       = rv.map(r => (!isNaN(r) && r>0) ? (r/30).toFixed(4) : "");
+    }
+    const deviceName = device === "hankyong" ? "한경대" : "삼안";
     const memo  = document.getElementById("memo").value.trim();
     const photo = document.getElementById("photo").files[0];
-    const vVals = [v1,v2,v3].map(parseFloat).filter(v => !isNaN(v) && v > 0);
-    const avgVelocity = (vVals.reduce((a,b)=>a+b,0)/vVals.length).toFixed(3);
+    const avgVelocity = (validVels.reduce((a,b)=>a+b,0)/validVels.length).toFixed(3);
 
     showStatus("loading", '<span class="spinner"></span>서버 전송 중… (최대 40초)');
 
@@ -384,15 +480,23 @@
     formData.append("width",     width);
     formData.append("depth",     depth);
     formData.append("height",    height);
-    formData.append("v1",        v1||"0");
-    formData.append("v2",        v2||"0");
-    formData.append("v3",        v3||"0");
+    formData.append("v1",        v1);
+    formData.append("v2",        v2);
+    formData.append("v3",        v3);
     formData.append("velocity",  avgVelocity);
     formData.append("heading",   currentHeading !== null ? currentHeading.toString() : "0");
     formData.append("memo",      memo);
     formData.append("latitude",  currentLat || "0");
     formData.append("longitude", currentLng || "0");
     formData.append("image",     photo);
+    // ── 신규: 사용 장비 + rpm + n ──
+    formData.append("device", deviceName);
+    formData.append("rpm1",   rpm1);
+    formData.append("rpm2",   rpm2);
+    formData.append("rpm3",   rpm3);
+    formData.append("n1",     n1);
+    formData.append("n2",     n2);
+    formData.append("n3",     n3);
 
     try {
       const res  = await fetch(SERVER_URL, { method:"POST", body:formData });
@@ -415,8 +519,9 @@
   }
 
   function resetForm() {
-    ["channelId","width","depth","height","v1","v2","v3","memo"].forEach(id =>
+    ["channelId","width","depth","height","v1","v2","v3","rpm1","rpm2","rpm3","memo"].forEach(id =>
       document.getElementById(id).value = "");
+    ["conv1","conv2","conv3"].forEach(id => document.getElementById(id).textContent = "—");
     document.getElementById("avgDisplay").textContent = "— m/s";
     document.getElementById("manningBox").style.display = "none";
     document.getElementById("photo").value = "";
@@ -424,6 +529,7 @@
     document.getElementById("photoArea").classList.remove("has-photo");
     document.getElementById("photoLabelText").textContent = "탭하여 사진 촬영";
     currentLat = null; currentLng = null; currentHeading = null;
+    setDevice("saman");
   }
 </script>
 </body>
