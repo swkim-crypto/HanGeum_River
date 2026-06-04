@@ -91,7 +91,11 @@
     .rpm-readout { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 8px 0; text-align: center; }
     .rpm-readout > div { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 6px 4px; }
     .rpm-readout .rl { display: block; font-size: 0.72rem; color: #64748b; margin-bottom: 2px; }
-    .rpm-readout .rv { display: block; font-weight: 700; color: #1e3a8a; font-size: 0.9rem; font-family: monospace; }
+    /* 바로 전송 버튼 */
+    .btn-send-direct { width: 100%; padding: 15px; background: #1d4ed8; color: #fff; border: none; border-radius: 11px; font-size: 1.05rem; font-weight: 800; font-family: inherit; cursor: pointer; transition: background .15s; margin-top: 4px; }
+    .btn-send-direct:hover { background: #1e40af; }
+    .btn-send-direct:active { background: #1e3a8a; }
+    .send-hint { font-size: 0.75rem; color: #94a3b8; text-align: center; margin: 8px 2px 0; line-height: 1.5; }
   </style>
 </head>
 <body>
@@ -178,6 +182,9 @@
     </div>
     <input type="file" id="photo" accept="image/*" capture="environment" style="display:none">
   </div>
+
+  <button type="button" class="btn-send-direct" id="btnSendDirect" onclick="directUpload()">📤 서버전송</button>
+  <div class="send-hint">유속(또는 rpm)만 입력하면 사진·ID·단면 없이도 전송됩니다. 사진을 촬영하면 GPS·방위각이 함께 저장됩니다.</div>
 
   <div id="statusMsg"></div>
 </div>
@@ -437,24 +444,20 @@
     }
   }
 
-  /* ── 확인 및 전송 ── */
-  async function confirmAndUpload() {
-    closePopup();
-
-    const channelId  = document.getElementById("channelId").value.trim();
-    const _width  = document.getElementById("width").value;
-    const _depth  = document.getElementById("depth").value;
-    const vels    = currentVelocities();
+  /* ── 데이터 수집 (유속/rpm만 있으면 전송 가능) ── */
+  function collectFormData() {
+    const vels = currentVelocities();
     const validVels = vels.filter(v => v !== null && !isNaN(v) && v > 0);
-    if (!channelId || !_width || !_depth || validVels.length === 0) {
-      alert(device === "hankyong"
-        ? "수로ID, 폭, 수심, rpm(최소 1회)을 입력해주세요."
-        : "수로ID, 폭, 수심, 유속(최소 1회)을 입력해주세요.");
-      return;
+    if (validVels.length === 0) {
+      return { ok:false, msg: device === "hankyong"
+        ? "rpm을 최소 1회 입력해주세요."
+        : "유속을 최소 1회 입력해주세요." };
     }
-    const width      = _width;
-    const depth      = _depth;
-    const height     = document.getElementById("height").value || "0";
+
+    const channelId = document.getElementById("channelId").value.trim();
+    const width  = document.getElementById("width").value  || "0";
+    const depth  = document.getElementById("depth").value  || "0";
+    const height = document.getElementById("height").value || "0";
 
     // 최종 유속 3개 (한경대는 환산값, 빈 측정은 0)
     const v1 = vels[0] !== null ? vels[0].toFixed(3) : "0";
@@ -468,38 +471,35 @@
       [rpm1,rpm2,rpm3] = rv.map(r => (!isNaN(r) && r>0) ? r.toString() : "");
       [n1,n2,n3]       = rv.map(r => (!isNaN(r) && r>0) ? (r/30).toFixed(4) : "");
     }
-    const deviceName = device === "hankyong" ? "한경대" : "삼안";
+    const deviceName  = device === "hankyong" ? "한경대" : "삼안";
     const memo  = document.getElementById("memo").value.trim();
     const photo = document.getElementById("photo").files[0];
     const avgVelocity = (validVels.reduce((a,b)=>a+b,0)/validVels.length).toFixed(3);
 
+    const fd = new FormData();
+    fd.append("channel_id", channelId);
+    fd.append("width",     width);
+    fd.append("depth",     depth);
+    fd.append("height",    height);
+    fd.append("v1",        v1);
+    fd.append("v2",        v2);
+    fd.append("v3",        v3);
+    fd.append("velocity",  avgVelocity);
+    fd.append("heading",   currentHeading !== null ? currentHeading.toString() : "0");
+    fd.append("memo",      memo);
+    fd.append("latitude",  currentLat || "0");
+    fd.append("longitude", currentLng || "0");
+    if (photo) fd.append("image", photo);        // 사진은 있을 때만 첨부
+    fd.append("device", deviceName);
+    fd.append("rpm1", rpm1); fd.append("rpm2", rpm2); fd.append("rpm3", rpm3);
+    fd.append("n1", n1);     fd.append("n2", n2);     fd.append("n3", n3);
+    return { ok:true, fd };
+  }
+
+  async function sendToServer(fd) {
     showStatus("loading", '<span class="spinner"></span>서버 전송 중… (최대 40초)');
-
-    const formData = new FormData();
-    formData.append("channel_id", channelId);
-    formData.append("width",     width);
-    formData.append("depth",     depth);
-    formData.append("height",    height);
-    formData.append("v1",        v1);
-    formData.append("v2",        v2);
-    formData.append("v3",        v3);
-    formData.append("velocity",  avgVelocity);
-    formData.append("heading",   currentHeading !== null ? currentHeading.toString() : "0");
-    formData.append("memo",      memo);
-    formData.append("latitude",  currentLat || "0");
-    formData.append("longitude", currentLng || "0");
-    formData.append("image",     photo);
-    // ── 신규: 사용 장비 + rpm + n ──
-    formData.append("device", deviceName);
-    formData.append("rpm1",   rpm1);
-    formData.append("rpm2",   rpm2);
-    formData.append("rpm3",   rpm3);
-    formData.append("n1",     n1);
-    formData.append("n2",     n2);
-    formData.append("n3",     n3);
-
     try {
-      const res  = await fetch(SERVER_URL, { method:"POST", body:formData });
+      const res  = await fetch(SERVER_URL, { method:"POST", body:fd });
       const data = await res.json();
       if (res.ok) {
         showStatus("ok", "✅ 전송 완료!");
@@ -510,6 +510,21 @@
     } catch(err) {
       showStatus("err", "❌ 전송 실패: 네트워크를 확인하세요.");
     }
+  }
+
+  /* ── 사진+GPS 확인 후 전송 (팝업 경로) ── */
+  async function confirmAndUpload() {
+    closePopup();
+    const r = collectFormData();
+    if (!r.ok) { alert(r.msg); return; }
+    await sendToServer(r.fd);
+  }
+
+  /* ── 바로 전송 (사진/ID/단면 없어도 유속만 있으면 OK) ── */
+  async function directUpload() {
+    const r = collectFormData();
+    if (!r.ok) { alert(r.msg); return; }
+    await sendToServer(r.fd);
   }
 
   function showStatus(type, html) {

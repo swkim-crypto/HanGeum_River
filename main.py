@@ -25,19 +25,19 @@ def root():
 
 @app.post("/upload")
 async def upload_data(
-    channel_id: str        = Form(...),
-    width:      float      = Form(...),
-    depth:      float      = Form(...),
+    channel_id: str        = Form(""),
+    width:      float      = Form(0.0),
+    depth:      float      = Form(0.0),
     height:     float      = Form(0.0),
     v1:         float      = Form(0.0),
     v2:         float      = Form(0.0),
     v3:         float      = Form(0.0),
-    velocity:   float      = Form(...),
+    velocity:   float      = Form(0.0),
     heading:    float      = Form(0.0),
     memo:       str        = Form(""),
-    latitude:   str        = Form(...),
-    longitude:  str        = Form(...),
-    image:      UploadFile = File(...),
+    latitude:   str        = Form("0"),
+    longitude:  str        = Form("0"),
+    image:      UploadFile = File(None),
     device:     str        = Form(""),
     rpm1:       str        = Form(""),
     rpm2:       str        = Form(""),
@@ -52,12 +52,14 @@ async def upload_data(
         now      = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         date_str = datetime.now().strftime("%Y%m%d%H%M%S")
 
-        # 사진 업로드
-        safe_id        = "".join(c for c in channel_id if c.isalnum() or c in "-_")
-        image_filename = f"photos/{date_str}_{safe_id}.jpg"
-        file_content   = await image.read()
-        repo.create_file(path=image_filename, message=f"Upload photo: {safe_id}", content=file_content, branch="main")
-        image_url = f"https://raw.githubusercontent.com/{REPO_NAME}/main/{image_filename}"
+        # 사진 업로드 (있을 때만)
+        image_url = ""
+        if image is not None and image.filename:
+            safe_id        = "".join(c for c in channel_id if c.isalnum() or c in "-_")
+            image_filename = f"photos/{date_str}_{safe_id}.jpg"
+            file_content   = await image.read()
+            repo.create_file(path=image_filename, message=f"Upload photo: {safe_id}", content=file_content, branch="main")
+            image_url = f"https://raw.githubusercontent.com/{REPO_NAME}/main/{image_filename}"
 
         # CSV 읽기
         try:
