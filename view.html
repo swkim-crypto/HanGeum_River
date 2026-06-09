@@ -61,28 +61,40 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     .error-msg { background: #fee2e2; color: #7f1d1d; border-radius: 10px; padding: 16px; text-align: center; margin: 12px 0; }
     .empty-msg { text-align: center; padding: 30px; color: #94a3b8; }
+    /* 언어 토글 */
+    .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .lang-toggle { display: inline-flex; border: 1px solid rgba(255,255,255,0.5); border-radius: 8px; overflow: hidden; }
+    .lang-btn { padding: 5px 11px; background: transparent; border: none; font-size: 0.78rem; font-weight: 700; color: #cbd5e1; cursor: pointer; font-family: inherit; }
+    .lang-btn.active { background: #fff; color: #1e3a8a; }
   </style>
 </head>
 <body>
 
 <div class="header">
-  <button class="refresh-btn" onclick="loadData()">🔄 새로고침</button>
-  <h1>🌊 농수로 현장 조회</h1>
+  <div class="header-top">
+    <div class="lang-toggle">
+      <button type="button" class="lang-btn active" id="langKo" onclick="setLang('ko')">한글</button>
+      <button type="button" class="lang-btn" id="langEn" onclick="setLang('en')">EN</button>
+      <button type="button" class="lang-btn" id="langAr" onclick="setLang('ar')">عربي</button>
+    </div>
+    <button class="refresh-btn" onclick="loadData()" data-ko="🔄 새로고침" data-en="🔄 Refresh" data-ar="🔄 تحديث">🔄 새로고침</button>
+  </div>
+  <h1 data-ko="🌊 농수로 현장 조회" data-en="🌊 Field Data Review" data-ar="🌊 مراجعة بيانات الموقع">🌊 농수로 현장 조회</h1>
   <div class="header-meta" id="lastUpdate">불러오는 중…</div>
 </div>
 
 <div class="summary-grid">
-  <div class="stat-card"><div class="num" id="statTotal">-</div><div class="lbl">전체 측정</div></div>
-  <div class="stat-card ok"><div class="num" id="statOk">-</div><div class="lbl">✔ 적합</div></div>
-  <div class="stat-card warn"><div class="num" id="statWarn">-</div><div class="lbl">⚠ 재측 필요</div></div>
+  <div class="stat-card"><div class="num" id="statTotal">-</div><div class="lbl" data-ko="전체 측정" data-en="Total" data-ar="الإجمالي">전체 측정</div></div>
+  <div class="stat-card ok"><div class="num" id="statOk">-</div><div class="lbl" data-ko="✔ 적합" data-en="✔ Pass" data-ar="✔ مطابق">✔ 적합</div></div>
+  <div class="stat-card warn"><div class="num" id="statWarn">-</div><div class="lbl" data-ko="⚠ 재측 필요" data-en="⚠ Re-measure" data-ar="⚠ إعادة القياس">⚠ 재측 필요</div></div>
 </div>
 
 <div class="filter-bar">
-  <input type="text" id="filterText" placeholder="🔍 수로ID 검색…" oninput="renderCards()">
+  <input type="text" id="filterText" placeholder="🔍 수로ID 검색…" data-ko-ph="🔍 수로ID 검색…" data-en-ph="🔍 Search Channel ID…" data-ar-ph="🔍 بحث عن معرّف القناة…" oninput="renderCards()">
   <select id="filterJudge" onchange="renderCards()">
-    <option value="">전체</option>
-    <option value="ok">✔ 적합만</option>
-    <option value="warn">⚠ 재측만</option>
+    <option value="" data-ko="전체" data-en="All" data-ar="الكل">전체</option>
+    <option value="ok" data-ko="✔ 적합만" data-en="✔ Pass only" data-ar="✔ المطابق فقط">✔ 적합만</option>
+    <option value="warn" data-ko="⚠ 재측만" data-en="⚠ Re-measure only" data-ar="⚠ إعادة القياس فقط">⚠ 재측만</option>
   </select>
 </div>
 
@@ -95,6 +107,79 @@
   const n_coeff = 0.025, S_slope = 0.001, ERR_THR = 10;
   let allRows = [];
   const activeMaps = {};
+  let lastUpdateTime = null;
+
+  /* ── 다국어 (한/영/아랍) ── */
+  let lang = "ko";
+  const T = {
+    ko: {
+      loadingMeta:"불러오는 중…", updated:"업데이트: ", loadFail:"불러오기 실패",
+      loading:"데이터 불러오는 중…", errLoad:"❌ 데이터를 불러올 수 없습니다.", empty:"조건에 맞는 데이터가 없습니다.",
+      rpmTitle:"🔢 rpm 측정값 (한경대) → 유속 환산", warn:"⚠ 재측 필요", ok:"✔ 적합",
+      mWidth:"수로 폭 B", mDepth:"수심 H", mHeight:"높이 H'", mQ:"실측 유량 Q",
+      vel1:"1차", vel2:"2차", vel3:"3차", avg:"평균",
+      mannTitle:"📐 매닝 계산", aA:"단면적 A", aP:"윤변 P", aR:"경심 R", aQm:"매닝 유량 Qm", aQ:"실측 유량 Q",
+      errLabel:"오차율", errWarn:"— 재측정 검토 필요", errOk:"— 측정값 신뢰 가능",
+      mapGoogle:"🗺 구글맵", mapKakao:"🗺 카카오맵", headingLabel:"방위각"
+    },
+    en: {
+      loadingMeta:"Loading…", updated:"Updated: ", loadFail:"Load failed",
+      loading:"Loading data…", errLoad:"❌ Could not load data.", empty:"No matching data.",
+      rpmTitle:"🔢 RPM readings (Hankyong) → velocity", warn:"⚠ Re-measure", ok:"✔ Pass",
+      mWidth:"Width B", mDepth:"Depth H", mHeight:"Height H'", mQ:"Measured Q",
+      vel1:"1st", vel2:"2nd", vel3:"3rd", avg:"Avg",
+      mannTitle:"📐 Manning calc.", aA:"Area A", aP:"Wetted P", aR:"Hyd. R", aQm:"Manning Qm", aQ:"Measured Q",
+      errLabel:"Error", errWarn:"— review / re-measure", errOk:"— within tolerance",
+      mapGoogle:"🗺 Google Maps", mapKakao:"🗺 Kakao Map", headingLabel:"Heading"
+    },
+    ar: {
+      loadingMeta:"جارٍ التحميل…", updated:"آخر تحديث: ", loadFail:"فشل التحميل",
+      loading:"جارٍ تحميل البيانات…", errLoad:"❌ تعذّر تحميل البيانات.", empty:"لا توجد بيانات مطابقة.",
+      rpmTitle:"🔢 قراءات دورة/دقيقة (Hankyong) ← السرعة", warn:"⚠ إعادة القياس", ok:"✔ مطابق",
+      mWidth:"العرض B", mDepth:"العمق H", mHeight:"الارتفاع H'", mQ:"التدفق المقاس Q",
+      vel1:"القياس 1", vel2:"القياس 2", vel3:"القياس 3", avg:"المتوسط",
+      mannTitle:"📐 حساب مانينغ", aA:"المساحة A", aP:"المحيط المبلل P", aR:"نصف القطر R", aQm:"تدفق مانينغ Qm", aQ:"التدفق المقاس Q",
+      errLabel:"نسبة الخطأ", errWarn:"← يُنصح بإعادة القياس", errOk:"← ضمن الحدود المقبولة",
+      mapGoogle:"🗺 خرائط Google", mapKakao:"🗺 خريطة Kakao", headingLabel:"الاتجاه"
+    }
+  };
+  const t = k => T[lang][k];
+
+  const DIRS = {
+    ko: ["북","북북동","북동","동북동","동","동남동","남동","남남동","남","남남서","남서","서남서","서","서북서","북서","북북서"],
+    en: ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"],
+    ar: ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"]
+  };
+  function devName(d) {
+    if (!d) return "";
+    if (lang === "ko") return d;
+    return ({ "삼안":"SAMAN", "한경대":"Hankyong" })[d] || d;
+  }
+  function localeFor() { return lang === "ko" ? "ko-KR" : (lang === "ar" ? "ar-SA" : "en-US"); }
+  function setLastUpdateLabel() {
+    const el = document.getElementById("lastUpdate");
+    if (lastUpdateTime === "fail") el.textContent = t("loadFail");
+    else if (lastUpdateTime instanceof Date) el.textContent = t("updated") + lastUpdateTime.toLocaleString(localeFor());
+    else el.textContent = t("loadingMeta");
+  }
+
+  function setLang(l) {
+    lang = l;
+    ["ko","en","ar"].forEach(x => {
+      const b = document.getElementById("lang" + x.charAt(0).toUpperCase() + x.slice(1));
+      if (b) b.classList.toggle("active", x === l);
+    });
+    document.documentElement.lang = l;
+    document.documentElement.dir = (l === "ar") ? "rtl" : "ltr";
+    document.querySelectorAll("[data-ko]").forEach(el => {
+      el.textContent = el.getAttribute("data-" + l) || el.getAttribute("data-ko");
+    });
+    document.querySelectorAll("[data-ko-ph]").forEach(el => {
+      el.placeholder = el.getAttribute("data-" + l + "-ph") || el.getAttribute("data-ko-ph");
+    });
+    setLastUpdateLabel();
+    if (allRows.length) renderCards();
+  }
 
   // 컬럼: 조사일자,농수로ID,수로폭,수심,높이,유속1,유속2,유속3,평균유속,촬영방위각,특이사항,위도,경도,사진링크,장비,rpm1,rpm2,rpm3,n1,n2,n3
   function parseCSV(text) {
@@ -138,23 +223,22 @@
   }
 
   function headingToDir(deg) {
-    const dirs = ["북","북북동","북동","동북동","동","동남동","남동","남남동","남","남남서","남서","서남서","서","서북서","북서","북북서"];
-    return dirs[Math.round(deg/22.5)%16];
+    return DIRS[lang][Math.round(deg/22.5)%16];
   }
 
   async function loadData() {
-    document.getElementById("dataContainer").innerHTML = '<div class="loading"><div class="spinner"></div>데이터 불러오는 중…</div>';
-    document.getElementById("lastUpdate").textContent = "불러오는 중…";
+    document.getElementById("dataContainer").innerHTML = '<div class="loading"><div class="spinner"></div>' + t("loading") + '</div>';
+    lastUpdateTime = null; setLastUpdateLabel();
     try {
       const res = await fetch(CSV_URL + "?t=" + Date.now());
       if (!res.ok) throw new Error("HTTP " + res.status);
       allRows = parseCSV(await res.text()).reverse();
-      document.getElementById("lastUpdate").textContent = "업데이트: " + new Date().toLocaleString("ko-KR");
+      lastUpdateTime = new Date(); setLastUpdateLabel();
       updateSummary(); renderCards();
     } catch(e) {
       document.getElementById("dataContainer").innerHTML =
-        `<div class="error-msg">❌ 데이터를 불러올 수 없습니다.<br><small>${e.message}</small></div>`;
-      document.getElementById("lastUpdate").textContent = "불러오기 실패";
+        `<div class="error-msg">${t("errLoad")}<br><small>${e.message}</small></div>`;
+      lastUpdateTime = "fail"; setLastUpdateLabel();
     }
   }
 
@@ -174,7 +258,7 @@
       return true;
     });
     if (!rows.length) {
-      document.getElementById("dataContainer").innerHTML = '<div class="empty-msg">조건에 맞는 데이터가 없습니다.</div>';
+      document.getElementById("dataContainer").innerHTML = '<div class="empty-msg">' + t("empty") + '</div>';
       return;
     }
     document.getElementById("dataContainer").innerHTML = rows.map((r,i) => buildCard(r,i)).join("");
@@ -187,10 +271,10 @@
     const hBadge = r.heading > 0
       ? `<span class="heading-badge">↑ ${r.heading}° ${headingToDir(r.heading)}</span>` : "";
     const isHan  = r.device === "한경대" || !!(r.rpm1 || r.rpm2 || r.rpm3);
-    const devBadge = r.device ? `<span class="dev-badge">${r.device}</span>` : "";
+    const devBadge = r.device ? `<span class="dev-badge">${devName(r.device)}</span>` : "";
     const rpmBlock = isHan ? `
         <div class="rpm-section">
-          <h4>🔢 rpm 측정값 (한경대) → 유속 환산</h4>
+          <h4>${t("rpmTitle")}</h4>
           <div class="velocity-row">
             <div><div class="vl">rpm1</div><div class="vv">${r.rpm1||'—'}</div></div>
             <div><div class="vl">rpm2</div><div class="vv">${r.rpm2||'—'}</div></div>
@@ -211,34 +295,34 @@
           <div class="ch-id">${r.id}${devBadge}${hBadge}</div>
           <div class="ch-time">${r.date}</div>
         </div>
-        <span class="badge ${m.isWarn?'badge-warn':'badge-ok'}">${m.isWarn?'⚠ 재측 필요':'✔ 적합'}</span>
+        <span class="badge ${m.isWarn?'badge-warn':'badge-ok'}">${m.isWarn?t("warn"):t("ok")}</span>
       </div>
       <div class="card-body" id="${cardId}">
         <div class="measure-grid">
-          <div><div class="m-label">수로 폭 B</div><div class="m-val">${r.width.toFixed(3)} m</div></div>
-          <div><div class="m-label">수심 H</div><div class="m-val">${r.depth.toFixed(3)} m</div></div>
-          <div><div class="m-label">높이 H'</div><div class="m-val">${r.height.toFixed(3)} m</div></div>
-          <div><div class="m-label">실측 유량 Q</div><div class="m-val">${m.Q.toFixed(4)} m³/s</div></div>
+          <div><div class="m-label">${t("mWidth")}</div><div class="m-val">${r.width.toFixed(3)} m</div></div>
+          <div><div class="m-label">${t("mDepth")}</div><div class="m-val">${r.depth.toFixed(3)} m</div></div>
+          <div><div class="m-label">${t("mHeight")}</div><div class="m-val">${r.height.toFixed(3)} m</div></div>
+          <div><div class="m-label">${t("mQ")}</div><div class="m-val">${m.Q.toFixed(4)} m³/s</div></div>
         </div>
         <div class="velocity-row">
-          <div><div class="vl">1차</div><div class="vv">${r.v1.toFixed(3)}</div></div>
-          <div><div class="vl">2차</div><div class="vv">${r.v2.toFixed(3)}</div></div>
-          <div><div class="vl">3차</div><div class="vv">${r.v3.toFixed(3)}</div></div>
-          <div class="avg-col"><div class="vl">평균</div><div class="vv">${r.velocity.toFixed(3)} m/s</div></div>
+          <div><div class="vl">${t("vel1")}</div><div class="vv">${r.v1.toFixed(3)}</div></div>
+          <div><div class="vl">${t("vel2")}</div><div class="vv">${r.v2.toFixed(3)}</div></div>
+          <div><div class="vl">${t("vel3")}</div><div class="vv">${r.v3.toFixed(3)}</div></div>
+          <div class="avg-col"><div class="vl">${t("avg")}</div><div class="vv">${r.velocity.toFixed(3)} m/s</div></div>
         </div>
         ${rpmBlock}
         ${r.memo?`<div class="memo-box">📝 ${r.memo}</div>`:""}
         <div class="manning-section">
-          <h4>📐 매닝 계산 (n=${n_coeff}, S=1/${Math.round(1/S_slope)})</h4>
+          <h4>${t("mannTitle")} (n=${n_coeff}, S=1/${Math.round(1/S_slope)})</h4>
           <div class="manning-grid">
-            <div class="mg-item"><div class="mg-lbl">단면적 A</div><div class="mg-val">${m.A.toFixed(3)} m²</div></div>
-            <div class="mg-item"><div class="mg-lbl">윤변 P</div><div class="mg-val">${m.P.toFixed(3)} m</div></div>
-            <div class="mg-item"><div class="mg-lbl">경심 R</div><div class="mg-val">${m.R.toFixed(4)} m</div></div>
-            <div class="mg-item" style="grid-column:1/3"><div class="mg-lbl">매닝 유량 Qm</div><div class="mg-val">${m.Qm.toFixed(4)} m³/s</div></div>
-            <div class="mg-item"><div class="mg-lbl">실측 유량 Q</div><div class="mg-val">${m.Q.toFixed(4)} m³/s</div></div>
+            <div class="mg-item"><div class="mg-lbl">${t("aA")}</div><div class="mg-val">${m.A.toFixed(3)} m²</div></div>
+            <div class="mg-item"><div class="mg-lbl">${t("aP")}</div><div class="mg-val">${m.P.toFixed(3)} m</div></div>
+            <div class="mg-item"><div class="mg-lbl">${t("aR")}</div><div class="mg-val">${m.R.toFixed(4)} m</div></div>
+            <div class="mg-item" style="grid-column:1/3"><div class="mg-lbl">${t("aQm")}</div><div class="mg-val">${m.Qm.toFixed(4)} m³/s</div></div>
+            <div class="mg-item"><div class="mg-lbl">${t("aQ")}</div><div class="mg-val">${m.Q.toFixed(4)} m³/s</div></div>
           </div>
           <div class="err-row ${m.isWarn?'err-warn':'err-ok'}">
-            오차율 ${m.errPct.toFixed(1)}% ${m.isWarn?'— 재측정 검토 필요':'— 측정값 신뢰 가능'}
+            ${t("errLabel")} ${m.errPct.toFixed(1)}% ${m.isWarn?t("errWarn"):t("errOk")}
           </div>
         </div>
         ${r.photo?`<img class="photo-thumb" src="${r.photo}"
@@ -246,8 +330,8 @@
           onclick="window.open('${r.photo}','_blank')">`:""}
         ${r.lat&&r.lng?`
         <div class="map-buttons">
-          <a class="map-btn btn-google" href="${googleUrl}" target="_blank">🗺 구글맵</a>
-          <button class="map-btn btn-kakao" onclick="toggleKakao('${mapId}',${r.lat},${r.lng},${r.heading})">🗺 카카오맵</button>
+          <a class="map-btn btn-google" href="${googleUrl}" target="_blank">${t("mapGoogle")}</a>
+          <button class="map-btn btn-kakao" onclick="toggleKakao('${mapId}',${r.lat},${r.lng},${r.heading})">${t("mapKakao")}</button>
         </div>
         <div class="kakao-map-wrap" id="wrap-${mapId}">
           <div class="kakao-map-container" id="${mapId}"></div>
@@ -304,7 +388,7 @@
     const info = new kakao.maps.InfoWindow({
       content: `<div style="padding:6px 10px;font-size:12px;line-height:1.6;">
         <b>${lat}, ${lng}</b><br>
-        방위각: ${heading}° (${headingToDir(heading)})
+        ${t("headingLabel")}: ${heading}° (${headingToDir(heading)})
       </div>`,
       removable: true
     });
