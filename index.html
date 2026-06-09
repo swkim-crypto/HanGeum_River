@@ -96,85 +96,105 @@
     .btn-send-direct:hover { background: #1e40af; }
     .btn-send-direct:active { background: #1e3a8a; }
     .send-hint { font-size: 0.75rem; color: #94a3b8; text-align: center; margin: 8px 2px 0; line-height: 1.5; }
+    /* 언어 토글 + 로고 + 타이틀 */
+    .topbar { display: flex; justify-content: flex-end; margin-bottom: 6px; }
+    .lang-toggle { display: inline-flex; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; }
+    .lang-btn { padding: 5px 13px; background: #f8fafc; border: none; font-size: 0.8rem; font-weight: 700; color: #64748b; cursor: pointer; font-family: inherit; }
+    .lang-btn.active { background: #1d4ed8; color: #fff; }
+    .title-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .title-row h2 { margin: 0; flex: 1; }
+    .brand-logo { height: 30px; width: auto; flex-shrink: 0; }
+    /* 삼안 버튼 안에 로고가 들어갈 경우 대비 */
+    .device-btn img { height: 22px; width: auto; vertical-align: middle; }
   </style>
 </head>
 <body>
 
 <div class="card">
-  <h2>🌊 유속 실측 데이터 입력</h2>
-
-  <div class="form-group">
-    <label>농수로 ID</label>
-    <input type="text" id="channelId" placeholder="예: CH-001" required>
+  <div class="topbar">
+    <div class="lang-toggle">
+      <button type="button" class="lang-btn active" id="langKo" onclick="setLang('ko')">한글</button>
+      <button type="button" class="lang-btn" id="langEn" onclick="setLang('en')">EN</button>
+      <button type="button" class="lang-btn" id="langAr" onclick="setLang('ar')">عربي</button>
+    </div>
+  </div>
+  <div class="title-row">
+    <h2 data-ko="유속데이터 실측" data-en="Flow Velocity Measurement" data-ar="قياس سرعة التدفق">유속데이터 실측</h2>
+    <img class="brand-logo" src="data:image/jpeg;base64,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" alt="SAMAN">
   </div>
 
-  <div class="section-label">📐 수로 단면</div>
+  <div class="form-group">
+    <label data-ko="농수로 ID" data-en="Channel ID" data-ar="معرّف القناة">농수로 ID</label>
+    <input type="text" id="channelId" placeholder="예: CH-001" data-ko-ph="예: CH-001" data-en-ph="e.g. CH-001" data-ar-ph="مثال: CH-001" required>
+  </div>
+
+  <div class="section-label" data-ko="📐 수로 단면" data-en="📐 Cross-section" data-ar="📐 المقطع العرضي">📐 수로 단면</div>
   <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:13px;">
-    <div><label>수로폭 B (m)</label><input type="number" id="width" step="0.001" placeholder="0.000" oninput="updateManning()"></div>
-    <div><label>높이 H' (m)</label><input type="number" id="height" step="0.001" placeholder="0.000"></div>
-    <div><label>수심 H (m)</label><input type="number" id="depth" step="0.001" placeholder="0.000" oninput="updateManning()"></div>
+    <div><label data-ko="수로폭 B (m)" data-en="Width B (m)" data-ar="العرض B (م)">수로폭 B (m)</label><input type="number" id="width" step="0.001" placeholder="0.000" oninput="updateManning()"></div>
+    <div><label data-ko="높이 H&#39; (m)" data-en="Height H&#39; (m)" data-ar="الارتفاع H&#39; (م)">높이 H' (m)</label><input type="number" id="height" step="0.001" placeholder="0.000"></div>
+    <div><label data-ko="수심 H (m)" data-en="Depth H (m)" data-ar="العمق H (م)">수심 H (m)</label><input type="number" id="depth" step="0.001" placeholder="0.000" oninput="updateManning()"></div>
   </div>
 
   <!-- 사용 장비 선택 -->
   <div class="form-group">
-    <label>사용 장비 (유속계)</label>
+    <label data-ko="사용 장비 (유속계)" data-en="Device (current meter)" data-ar="الجهاز (مقياس التدفق)">사용 장비 (유속계)</label>
     <div class="device-toggle">
-      <button type="button" class="device-btn active" id="devSaman" onclick="setDevice('saman')">삼안</button>
-      <button type="button" class="device-btn" id="devHankyong" onclick="setDevice('hankyong')">한경대</button>
+      <button type="button" class="device-btn active" id="devSaman" onclick="setDevice('saman')" data-ko="삼안" data-en="SAMAN" data-ar="SAMAN">삼안</button>
+      <button type="button" class="device-btn" id="devHankyong" onclick="setDevice('hankyong')" data-ko="한경대" data-en="Hankyong" data-ar="Hankyong">한경대</button>
     </div>
   </div>
 
   <div class="form-group">
     <!-- 삼안: 유속 직접 입력 -->
     <div id="velocityGroup">
-      <label>실측 유속 3회 (m/s)</label>
+      <label data-ko="실측 유속 3회 (m/s)" data-en="Measured velocity ×3 (m/s)" data-ar="السرعة المقاسة ×3 (م/ث)">실측 유속 3회 (m/s)</label>
       <div class="velocity-grid">
-        <input type="number" id="v1" step="0.001" placeholder="1차" oninput="updateVelocity()">
-        <input type="number" id="v2" step="0.001" placeholder="2차" oninput="updateVelocity()">
-        <input type="number" id="v3" step="0.001" placeholder="3차" oninput="updateVelocity()">
+        <input type="number" id="v1" step="0.001" placeholder="1차" data-ko-ph="1차" data-en-ph="1st" data-ar-ph="1" oninput="updateVelocity()">
+        <input type="number" id="v2" step="0.001" placeholder="2차" data-ko-ph="2차" data-en-ph="2nd" data-ar-ph="2" oninput="updateVelocity()">
+        <input type="number" id="v3" step="0.001" placeholder="3차" data-ko-ph="3차" data-en-ph="3rd" data-ar-ph="3" oninput="updateVelocity()">
       </div>
     </div>
 
     <!-- 한경대: rpm 입력 → 유속 자동 환산 -->
     <div id="rpmGroup" style="display:none;">
-      <label>측정 rpm 3회 → 유속 자동 환산</label>
+      <label data-ko="측정 rpm 3회 → 유속 자동 환산" data-en="Measured RPM ×3 → auto velocity" data-ar="دورة/دقيقة ×3 ← تحويل تلقائي للسرعة">측정 rpm 3회 → 유속 자동 환산</label>
       <div class="velocity-grid">
-        <input type="number" id="rpm1" step="0.1" placeholder="rpm 1차" oninput="updateVelocity()">
-        <input type="number" id="rpm2" step="0.1" placeholder="rpm 2차" oninput="updateVelocity()">
-        <input type="number" id="rpm3" step="0.1" placeholder="rpm 3차" oninput="updateVelocity()">
+        <input type="number" id="rpm1" step="0.1" placeholder="rpm 1차" data-ko-ph="rpm 1차" data-en-ph="RPM 1st" data-ar-ph="RPM 1" oninput="updateVelocity()">
+        <input type="number" id="rpm2" step="0.1" placeholder="rpm 2차" data-ko-ph="rpm 2차" data-en-ph="RPM 2nd" data-ar-ph="RPM 2" oninput="updateVelocity()">
+        <input type="number" id="rpm3" step="0.1" placeholder="rpm 3차" data-ko-ph="rpm 3차" data-en-ph="RPM 3rd" data-ar-ph="RPM 3" oninput="updateVelocity()">
       </div>
       <div class="rpm-readout">
-        <div><span class="rl">1차 유속</span><span class="rv" id="conv1">—</span></div>
-        <div><span class="rl">2차 유속</span><span class="rv" id="conv2">—</span></div>
-        <div><span class="rl">3차 유속</span><span class="rv" id="conv3">—</span></div>
+        <div><span class="rl" data-ko="1차 유속" data-en="1st V" data-ar="السرعة 1">1차 유속</span><span class="rv" id="conv1">—</span></div>
+        <div><span class="rl" data-ko="2차 유속" data-en="2nd V" data-ar="السرعة 2">2차 유속</span><span class="rv" id="conv2">—</span></div>
+        <div><span class="rl" data-ko="3차 유속" data-en="3rd V" data-ar="السرعة 3">3차 유속</span><span class="rv" id="conv3">—</span></div>
       </div>
-      <div style="font-size:0.72rem;color:#6b7280;margin:0 0 8px;">n = rpm ÷ 30 → 유속 환산식 적용</div>
+      <div style="font-size:0.72rem;color:#6b7280;margin:0 0 8px;" data-ko="n = rpm ÷ 30 → 유속 환산식 적용" data-en="n = rpm ÷ 30 → velocity formula applied" data-ar="n = دورة/دقيقة ÷ 30 ← تطبيق معادلة السرعة">n = rpm ÷ 30 → 유속 환산식 적용</div>
     </div>
 
-    <div class="avg-display">평균 유속: <span id="avgDisplay">— m/s</span></div>
+    <div class="avg-display"><span data-ko="평균 유속" data-en="Average velocity" data-ar="متوسط السرعة">평균 유속</span>: <span id="avgDisplay">— m/s</span></div>
   </div>
 
   <div id="manningBox">
-    <h3>📐 매닝 유량 미리보기</h3>
+    <h3 data-ko="📐 매닝 유량 미리보기" data-en="📐 Manning flow preview" data-ar="📐 معاينة تدفق مانينغ">📐 매닝 유량 미리보기</h3>
     <div class="manning-grid">
-      <span class="label">단면적 A</span><span class="val" id="mA">-</span>
-      <span class="label">윤변 P</span>   <span class="val" id="mP">-</span>
-      <span class="label">경심 R</span>   <span class="val" id="mR">-</span>
-      <span class="label">실측유량 Q</span><span class="val" id="mQ">-</span>
-      <span class="label">매닝유량 Qm</span><span class="val" id="mQm">-</span>
-      <span class="label">오차율</span>   <span class="val" id="mErr">-</span>
+      <span class="label" data-ko="단면적 A" data-en="Area A" data-ar="المساحة A">단면적 A</span><span class="val" id="mA">-</span>
+      <span class="label" data-ko="윤변 P" data-en="Wetted perim. P" data-ar="المحيط المبلل P">윤변 P</span>   <span class="val" id="mP">-</span>
+      <span class="label" data-ko="경심 R" data-en="Hyd. radius R" data-ar="نصف القطر الهيدروليكي R">경심 R</span>   <span class="val" id="mR">-</span>
+      <span class="label" data-ko="실측유량 Q" data-en="Measured Q" data-ar="التدفق المقاس Q">실측유량 Q</span><span class="val" id="mQ">-</span>
+      <span class="label" data-ko="매닝유량 Qm" data-en="Manning Qm" data-ar="تدفق مانينغ Qm">매닝유량 Qm</span><span class="val" id="mQm">-</span>
+      <span class="label" data-ko="오차율" data-en="Error %" data-ar="نسبة الخطأ %">오차율</span>   <span class="val" id="mErr">-</span>
     </div>
-    <div style="font-size:0.75rem;color:#6b7280;margin-top:8px;">n=0.025, S=1/1000 (기본값)</div>
+    <div style="font-size:0.75rem;color:#6b7280;margin-top:8px;" data-ko="n=0.025, S=1/1000 (기본값)" data-en="n=0.025, S=1/1000 (default)" data-ar="n=0.025, S=1/1000 (افتراضي)">n=0.025, S=1/1000 (기본값)</div>
   </div>
 
   <div class="form-group" style="margin-top:13px;">
-    <label>특이사항 메모</label>
-    <textarea id="memo" placeholder="예: 수초 많음, 부유물 있음, 호안 손상 등"></textarea>
+    <label data-ko="특이사항 메모" data-en="Remarks" data-ar="ملاحظات">특이사항 메모</label>
+    <textarea id="memo" placeholder="예: 수초 많음, 부유물 있음, 호안 손상 등" data-ko-ph="예: 수초 많음, 부유물 있음, 호안 손상 등" data-en-ph="e.g. heavy weeds, debris, bank damage" data-ar-ph="مثال: أعشاب كثيفة، حطام، تلف الضفة"></textarea>
   </div>
 
   <!-- 사진 촬영 → 팝업 트리거 -->
   <div class="form-group">
-    <label>현장 사진 촬영</label>
+    <label data-ko="현장 사진 촬영" data-en="Site photo" data-ar="صورة الموقع">현장 사진 촬영</label>
     <div class="photo-area" id="photoArea" onclick="document.getElementById('photo').click()">
       <div class="photo-icon">📷</div>
       <div class="photo-label-text" id="photoLabelText">탭하여 사진 촬영</div>
@@ -183,38 +203,38 @@
     <input type="file" id="photo" accept="image/*" capture="environment" style="display:none">
   </div>
 
-  <button type="button" class="btn-send-direct" id="btnSendDirect" onclick="directUpload()">📤 서버전송</button>
-  <div class="send-hint">유속(또는 rpm)만 입력하면 사진·ID·단면 없이도 전송됩니다. 사진을 촬영하면 GPS·방위각이 함께 저장됩니다.</div>
+  <button type="button" class="btn-send-direct" id="btnSendDirect" onclick="directUpload()" data-ko="📤 서버전송" data-en="📤 Send to server" data-ar="📤 إرسال إلى الخادم">📤 서버전송</button>
+  <div class="send-hint" data-ko="유속(또는 rpm)만 입력하면 사진·ID·단면 없이도 전송됩니다. 사진을 촬영하면 GPS·방위각이 함께 저장됩니다." data-en="Enter velocity (or RPM) only and you can send without photo/ID/section. Taking a photo also records GPS &amp; heading." data-ar="أدخل السرعة (أو دورة/دقيقة) فقط ويمكنك الإرسال دون صورة/معرّف/مقطع. التقاط صورة يسجّل أيضًا GPS والاتجاه.">유속(또는 rpm)만 입력하면 사진·ID·단면 없이도 전송됩니다. 사진을 촬영하면 GPS·방위각이 함께 저장됩니다.</div>
 
   <div id="statusMsg"></div>
 </div>
 
 <div class="card" style="font-size:0.84rem; color:#64748b; line-height:1.8;">
-  <strong style="color:#1e3a8a;">💡 사용 안내</strong><br>
-  ① ID·단면 입력 → ② 장비 선택(삼안=유속 / 한경대=rpm) → ③ 3회 측정 → ④ 메모 → ⑤ 사진 촬영<br>
-  📷 사진 촬영 즉시 GPS+방위각 자동 취득 → 확인 후 바로 전송
+  <strong style="color:#1e3a8a;" data-ko="💡 사용 안내" data-en="💡 How to use" data-ar="💡 طريقة الاستخدام">💡 사용 안내</strong><br>
+  <span data-ko="① ID·단면 입력 → ② 장비 선택(삼안=유속 / 한경대=rpm) → ③ 3회 측정 → ④ 메모 → ⑤ 사진 촬영" data-en="① ID &amp; section → ② Device (SAMAN=velocity / Hankyong=RPM) → ③ Measure ×3 → ④ Memo → ⑤ Photo" data-ar="① المعرّف والمقطع ← ② الجهاز (SAMAN=السرعة / Hankyong=دورة/دقيقة) ← ③ القياس ×3 ← ④ ملاحظة ← ⑤ صورة">① ID·단면 입력 → ② 장비 선택(삼안=유속 / 한경대=rpm) → ③ 3회 측정 → ④ 메모 → ⑤ 사진 촬영</span><br>
+  <span data-ko="📷 사진 촬영 즉시 GPS+방위각 자동 취득 → 확인 후 바로 전송" data-en="📷 Photo captures GPS + heading → confirm &amp; send" data-ar="📷 الصورة تلتقط GPS والاتجاه ← التأكيد والإرسال">📷 사진 촬영 즉시 GPS+방위각 자동 취득 → 확인 후 바로 전송</span>
 </div>
 
 <!-- ── 확인 팝업 ──────────────────────────────────── -->
 <div class="popup-overlay" id="popupOverlay">
   <div class="popup-box">
-    <div class="popup-header">📍 위치·방향 확인 및 전송</div>
+    <div class="popup-header" data-ko="📍 위치·방향 확인 및 전송" data-en="📍 Confirm location &amp; send" data-ar="📍 تأكيد الموقع والإرسال">📍 위치·방향 확인 및 전송</div>
     <div class="popup-body">
       <img class="popup-photo" id="popupPhoto" src="" alt="현장사진">
 
       <div class="popup-info-row">
         <span class="popup-info-icon">📍</span>
-        <span class="popup-info-label">위도</span>
+        <span class="popup-info-label" data-ko="위도" data-en="Latitude" data-ar="خط العرض">위도</span>
         <span class="popup-info-val loading" id="popupLat"><span class="spinner-sm"></span>취득 중…</span>
       </div>
       <div class="popup-info-row">
         <span class="popup-info-icon">📍</span>
-        <span class="popup-info-label">경도</span>
+        <span class="popup-info-label" data-ko="경도" data-en="Longitude" data-ar="خط الطول">경도</span>
         <span class="popup-info-val loading" id="popupLng"><span class="spinner-sm"></span>취득 중…</span>
       </div>
       <div class="popup-info-row">
         <span class="popup-info-icon">🧭</span>
-        <span class="popup-info-label">촬영방향</span>
+        <span class="popup-info-label" data-ko="촬영방향" data-en="Direction" data-ar="الاتجاه">촬영방향</span>
         <div class="popup-compass">
           <div class="compass-circle"><span class="compass-arrow" id="popupArrow">↑</span></div>
           <span class="popup-info-val loading" id="popupHeading"><span class="spinner-sm"></span>취득 중…</span>
@@ -222,7 +242,7 @@
       </div>
     </div>
     <div class="popup-footer">
-      <button class="btn-cancel" onclick="closePopup()">✕ 취소</button>
+      <button class="btn-cancel" onclick="closePopup()" data-ko="✕ 취소" data-en="✕ Cancel" data-ar="✕ إلغاء">✕ 취소</button>
       <button class="btn-confirm" id="btnConfirm" disabled onclick="confirmAndUpload()">
         <span id="btnConfirmText">⏳ 좌표 취득 중…</span>
       </button>
@@ -239,6 +259,55 @@
   let currentHeading = null;
   let gpsReady       = false;
   let orientationListener = null;
+
+  /* ── 다국어 (한/영) ── */
+  let lang = "ko";
+  const T = {
+    ko: {
+      photoTap: "탭하여 사진 촬영", photoSelected: "✔ 사진 선택됨 (탭하여 변경)",
+      acquiring: "취득 중…", acqFail: "취득 실패",
+      confirmAcq: "⏳ 좌표 취득 중…", confirmReady: "✔ 확인 및 전송", confirmNoGps: "⚠ GPS 없이 전송",
+      locating: "📍 좌표 취득 중…", sending: "서버 전송 중… (최대 40초)",
+      sentOk: "✅ 전송 완료!", serverErr: "❌ 서버 오류: ", netErr: "❌ 전송 실패: 네트워크를 확인하세요.",
+      unknownErr: "알 수 없는 오류", needVel: "유속을 최소 1회 입력해주세요.", needRpm: "rpm을 최소 1회 입력해주세요."
+    },
+    en: {
+      photoTap: "Tap to take photo", photoSelected: "✔ Photo selected (tap to change)",
+      acquiring: "Acquiring…", acqFail: "Failed",
+      confirmAcq: "⏳ Acquiring location…", confirmReady: "✔ Confirm & Send", confirmNoGps: "⚠ Send without GPS",
+      locating: "📍 Acquiring location…", sending: "Sending… (up to 40s)",
+      sentOk: "✅ Sent!", serverErr: "❌ Server error: ", netErr: "❌ Send failed: check your network.",
+      unknownErr: "Unknown error", needVel: "Enter at least one velocity.", needRpm: "Enter at least one RPM."
+    },
+    ar: {
+      photoTap: "اضغط لالتقاط صورة", photoSelected: "✔ تم اختيار الصورة (اضغط للتغيير)",
+      acquiring: "جارٍ التحديد…", acqFail: "فشل",
+      confirmAcq: "⏳ جارٍ تحديد الموقع…", confirmReady: "✔ تأكيد وإرسال", confirmNoGps: "⚠ إرسال بدون GPS",
+      locating: "📍 جارٍ تحديد الموقع…", sending: "جارٍ الإرسال… (حتى 40 ثانية)",
+      sentOk: "✅ تم الإرسال!", serverErr: "❌ خطأ في الخادم: ", netErr: "❌ فشل الإرسال: تحقق من الشبكة.",
+      unknownErr: "خطأ غير معروف", needVel: "أدخل سرعة واحدة على الأقل.", needRpm: "أدخل قيمة دورة/دقيقة واحدة على الأقل."
+    }
+  };
+  const t = k => T[lang][k];
+
+  function setLang(l) {
+    lang = l;
+    ["ko","en","ar"].forEach(x => {
+      const btn = document.getElementById("lang" + x.charAt(0).toUpperCase() + x.slice(1));
+      if (btn) btn.classList.toggle("active", x === l);
+    });
+    document.documentElement.lang = l;
+    document.documentElement.dir = (l === "ar") ? "rtl" : "ltr";
+    document.querySelectorAll("[data-ko]").forEach(el => {
+      el.textContent = el.getAttribute("data-" + l) || el.getAttribute("data-ko");
+    });
+    document.querySelectorAll("[data-ko-ph]").forEach(el => {
+      el.placeholder = el.getAttribute("data-" + l + "-ph") || el.getAttribute("data-ko-ph");
+    });
+    // 사진 라벨은 선택 상태에 따라 동적
+    const hasPhoto = document.getElementById("photo").files.length > 0;
+    document.getElementById("photoLabelText").textContent = hasPhoto ? t("photoSelected") : t("photoTap");
+  }
 
   /* ── 나침반 시작 ── */
   function startCompass() {
@@ -362,7 +431,7 @@
     document.getElementById("photoPreview").src = previewUrl;
     document.getElementById("photoPreview").style.display = "block";
     document.getElementById("photoArea").classList.add("has-photo");
-    document.getElementById("photoLabelText").textContent = "✔ 사진 선택됨 (탭하여 변경)";
+    document.getElementById("photoLabelText").textContent = t("photoSelected");
     document.getElementById("popupPhoto").src = previewUrl;
 
     // 팝업 초기화 후 오픈
@@ -374,14 +443,14 @@
     gpsReady = false;
     currentLat = null; currentLng = null;
 
-    setPopupField("popupLat",     "loading", "취득 중…");
-    setPopupField("popupLng",     "loading", "취득 중…");
-    setPopupField("popupHeading", "loading", "취득 중…");
+    setPopupField("popupLat",     "loading", t("acquiring"));
+    setPopupField("popupLng",     "loading", t("acquiring"));
+    setPopupField("popupHeading", "loading", t("acquiring"));
 
     const btn = document.getElementById("btnConfirm");
     btn.disabled = true;
     btn.className = "btn-confirm";
-    document.getElementById("btnConfirmText").textContent = "⏳ 좌표 취득 중…";
+    document.getElementById("btnConfirmText").textContent = t("confirmAcq");
 
     document.getElementById("popupOverlay").classList.add("open");
 
@@ -411,17 +480,17 @@
         gpsReady = true;
         btn.disabled = false;
         btn.className = "btn-confirm ready";
-        document.getElementById("btnConfirmText").textContent = "✔ 확인 및 전송";
+        document.getElementById("btnConfirmText").textContent = t("confirmReady");
       },
       err => {
-        setPopupField("popupLat",     "error", "취득 실패");
-        setPopupField("popupLng",     "error", "취득 실패");
-        setPopupField("popupHeading", "error", "취득 실패");
+        setPopupField("popupLat",     "error", t("acqFail"));
+        setPopupField("popupLng",     "error", t("acqFail"));
+        setPopupField("popupHeading", "error", t("acqFail"));
         // GPS 실패해도 수동 진행 허용
         currentLat = "0"; currentLng = "0"; currentHeading = 0;
         btn.disabled = false;
         btn.className = "btn-confirm";
-        document.getElementById("btnConfirmText").textContent = "⚠ GPS 없이 전송";
+        document.getElementById("btnConfirmText").textContent = t("confirmNoGps");
       },
       { enableHighAccuracy: true, timeout: 15000 }
     );
@@ -450,8 +519,8 @@
     const validVels = vels.filter(v => v !== null && !isNaN(v) && v > 0);
     if (validVels.length === 0) {
       return { ok:false, msg: device === "hankyong"
-        ? "rpm을 최소 1회 입력해주세요."
-        : "유속을 최소 1회 입력해주세요." };
+        ? t("needRpm")
+        : t("needVel") };
     }
 
     const channelId = document.getElementById("channelId").value.trim();
@@ -497,18 +566,18 @@
   }
 
   async function sendToServer(fd) {
-    showStatus("loading", '<span class="spinner"></span>서버 전송 중… (최대 40초)');
+    showStatus("loading", '<span class="spinner"></span>' + t("sending"));
     try {
       const res  = await fetch(SERVER_URL, { method:"POST", body:fd });
       const data = await res.json();
       if (res.ok) {
-        showStatus("ok", "✅ 전송 완료!");
+        showStatus("ok", t("sentOk"));
         resetForm();
       } else {
-        showStatus("err", "❌ 서버 오류: "+(data.detail||"알 수 없는 오류"));
+        showStatus("err", t("serverErr")+(data.detail||t("unknownErr")));
       }
     } catch(err) {
-      showStatus("err", "❌ 전송 실패: 네트워크를 확인하세요.");
+      showStatus("err", t("netErr"));
     }
   }
 
@@ -544,7 +613,7 @@
     if (!r.ok) { alert(r.msg); return; }
     // 좌표가 아직 없으면 지금 취득 (버튼 탭 = 사용자 제스처 → iOS 권한 OK)
     if (currentLat === null || currentLng === null || currentLat === "0") {
-      showStatus("loading", '<span class="spinner"></span>📍 좌표 취득 중…');
+      showStatus("loading", '<span class="spinner"></span>' + t("locating"));
       startCompass();                     // iOS 나침반 권한 요청
       await acquireGPS();
     }
@@ -568,7 +637,7 @@
     document.getElementById("photo").value = "";
     document.getElementById("photoPreview").style.display = "none";
     document.getElementById("photoArea").classList.remove("has-photo");
-    document.getElementById("photoLabelText").textContent = "탭하여 사진 촬영";
+    document.getElementById("photoLabelText").textContent = t("photoTap");
     currentLat = null; currentLng = null; currentHeading = null;
     setDevice("saman");
   }
