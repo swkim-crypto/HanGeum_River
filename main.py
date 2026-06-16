@@ -24,6 +24,25 @@ def normalize(text: str) -> str:
 PHOTOS_PATH   = "photos.csv"
 PHOTOS_HEADER = "촬영시각,농수로ID,위도,경도,사진링크\n"
 
+def read_csv_clean(repo, path, header):
+    """기존 CSV를 읽되, 내용이 인코딩 손상됐거나 헤더가 비표준/빈 줄이면
+    정상 헤더로 자가복구하고 실제 데이터 행만 보존한다. (text, sha) 반환."""
+    try:
+        contents = repo.get_contents(path, ref="main")
+    except Exception:
+        return header, None  # 파일 없음 → 새로 생성
+    try:
+        raw  = base64.b64decode(contents.content)
+        text = normalize(raw.decode("utf-8-sig"))  # 손상 시 UnicodeDecodeError
+    except Exception:
+        return header, contents.sha  # 내용 손상 → 헤더만 남기고 초기화(기존 파일 교체)
+    lines = text.split("\n")
+    first = lines[0].strip() if lines else ""
+    if first != header.strip():
+        body = [l for l in lines[1:] if l.strip(", \t\r")]  # 빈 ',,,,' 줄 제거
+        text = header + ("\n".join(body) + "\n" if body else "")
+    return text, contents.sha
+
 @app.get("/")
 def root():
     return {"status": "ok", "message": "HanGeum River API is running"}
@@ -82,19 +101,11 @@ async def upload_data(
             safe_id        = "".join(c for c in channel_id if c.isalnum() or c in "-_")
             image_filename = f"photos/{date_str}_{safe_id}.jpg"
             file_content   = await image.read()
-            repo.create_file(path=image_filename, message=f"Upload photo: {safe_id}", content=file_content, branch="main")
+            repo.create_file(path=image_filename, message=f"Upload photo: {safe_id} [skip render]", content=file_content, branch="main")
             image_url = f"https://raw.githubusercontent.com/{REPO_NAME}/main/{image_filename}"
 
-        # CSV 읽기
-        try:
-            contents     = repo.get_contents(CSV_PATH, ref="main")
-            raw_bytes    = base64.b64decode(contents.content)
-            existing_str = raw_bytes.decode("utf-8-sig", errors="ignore")
-            existing_str = normalize(existing_str)
-            sha          = contents.sha
-        except Exception:
-            existing_str = CSV_HEADER
-            sha          = None
+        # CSV 읽기 (헤더 손상 시 자가복구)
+        existing_str, sha = read_csv_clean(repo, CSV_PATH, CSV_HEADER)
 
         memo_safe = normalize(memo).replace(",", ";").replace("\n", " ")
 
@@ -113,9 +124,9 @@ async def upload_data(
         updated_str = existing_str + new_row
 
         if sha:
-            repo.update_file(CSV_PATH, "Update data row", updated_str, sha, branch="main")
+            repo.update_file(CSV_PATH, "Update data row [skip render]", updated_str, sha, branch="main")
         else:
-            repo.create_file(CSV_PATH, "Create data file", updated_str, branch="main")
+            repo.create_file(CSV_PATH, "Create data file [skip render]", updated_str, branch="main")
 
         return {"status": "success", "message": "데이터 전송 완료!", "row": new_row.strip()}
 
@@ -142,7 +153,7 @@ async def upload_photo(
         safe_id        = "".join(c for c in normalize(channel_id) if c.isalnum() or c in "-_")
         image_filename = f"photos/{date_str}_{safe_id}.jpg"
         file_content   = await image.read()
-        repo.create_file(path=image_filename, message=f"Photo: {safe_id}", content=file_content, branch="main")
+        repo.create_file(path=image_filename, message=f"Photo: {safe_id} [skip render]", content=file_content, branch="main")
         image_url = f"https://raw.githubusercontent.com/{REPO_NAME}/main/{image_filename}"
 
         # photos.csv 누적 (동시/지연 충돌 시 sha 재조회 후 재시도)
@@ -150,13 +161,11 @@ async def upload_photo(
         last_err = None
         for attempt in range(5):
             try:
-                try:
-                    contents     = repo.get_contents(PHOTOS_PATH, ref="main")
-                    existing_str = normalize(base64.b64decode(contents.content).decode("utf-8-sig", errors="ignore"))
-                    repo.update_file(PHOTOS_PATH, "Add photo row", existing_str + new_row, contents.sha, branch="main")
-                except Exception:
-                    # 파일이 없으면 생성
-                    repo.create_file(PHOTOS_PATH, "Create photos file", PHOTOS_HEADER + new_row, branch="main")
+                existing_str, sha = read_csv_clean(repo, PHOTOS_PATH, PHOTOS_HEADER)
+                if sha:
+                    repo.update_file(PHOTOS_PATH, "Add photo row [skip render]", existing_str + new_row, sha, branch="main")
+                else:
+                    repo.create_file(PHOTOS_PATH, "Create photos file [skip render]", existing_str + new_row, branch="main")
                 last_err = None
                 break
             except Exception as ex:
