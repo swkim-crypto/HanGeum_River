@@ -110,9 +110,19 @@
   const CSV_URL = "https://raw.githubusercontent.com/swkim-crypto/HanGeum_River/main/data.csv";
   const PHOTOS_CSV_URL = "https://raw.githubusercontent.com/swkim-crypto/HanGeum_River/main/photos.csv";
   const REPO = "swkim-crypto/HanGeum_River";
+  const API_BASE = "https://hangeum-river.onrender.com";
+  const SERVER_ENDPOINT = { "data.csv": "/data", "photos.csv": "/photos" };
 
-  // 항상 최신 내용 읽기: GitHub API(캐시 없음) 우선, 실패 시 raw 폴백
+  // 항상 최신 내용 읽기: Render 서버(인증·무캐시·배포무관) 우선,
+  // 실패 시 GitHub API, 그래도 실패 시 raw 폴백
   async function fetchFresh(file) {
+    const ep = SERVER_ENDPOINT[file];
+    if (ep) {
+      try {
+        const rs = await fetch(`${API_BASE}${ep}?t=${Date.now()}`, { cache: "no-store" });
+        if (rs.ok) return await rs.text();
+      } catch (e) { /* 서버 실패 → GitHub 폴백 */ }
+    }
     try {
       const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${file}?ref=main&t=${Date.now()}`,
                             { headers: { "Accept": "application/vnd.github.raw" }, cache: "no-store" });
