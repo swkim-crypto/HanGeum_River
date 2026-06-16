@@ -5,6 +5,7 @@ import unicodedata
 from datetime import datetime
 from fastapi import FastAPI, Form, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
 from github import Github
 
 app = FastAPI()
@@ -26,6 +27,25 @@ PHOTOS_HEADER = "촬영시각,농수로ID,위도,경도,사진링크\n"
 @app.get("/")
 def root():
     return {"status": "ok", "message": "HanGeum River API is running"}
+
+# ── 조회용: 서버가 인증 호출로 GitHub에서 직접 읽어 내려줌 ──────────────
+# (Contents API 60회/시간 한도 회피 + raw CDN 5분 캐시 회피 + Pages 배포와 무관)
+def _read_repo_file(path: str, header: str) -> str:
+    try:
+        g        = Github(GITHUB_TOKEN)
+        repo     = g.get_repo(REPO_NAME)
+        contents = repo.get_contents(path, ref="main")
+        return normalize(base64.b64decode(contents.content).decode("utf-8-sig", errors="ignore"))
+    except Exception:
+        return header
+
+@app.get("/data", response_class=PlainTextResponse)
+def get_data():
+    return _read_repo_file(CSV_PATH, CSV_HEADER)
+
+@app.get("/photos", response_class=PlainTextResponse)
+def get_photos():
+    return _read_repo_file(PHOTOS_PATH, PHOTOS_HEADER)
 
 @app.post("/upload")
 async def upload_data(
