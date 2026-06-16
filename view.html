@@ -109,6 +109,19 @@
 <script>
   const CSV_URL = "https://raw.githubusercontent.com/swkim-crypto/HanGeum_River/main/data.csv";
   const PHOTOS_CSV_URL = "https://raw.githubusercontent.com/swkim-crypto/HanGeum_River/main/photos.csv";
+  const REPO = "swkim-crypto/HanGeum_River";
+
+  // 항상 최신 내용 읽기: GitHub API(캐시 없음) 우선, 실패 시 raw 폴백
+  async function fetchFresh(file) {
+    try {
+      const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${file}?ref=main&t=${Date.now()}`,
+                            { headers: { "Accept": "application/vnd.github.raw" }, cache: "no-store" });
+      if (r.ok) return await r.text();
+    } catch (e) { /* API 실패 → raw 폴백 */ }
+    const r2 = await fetch(`https://raw.githubusercontent.com/${REPO}/main/${file}?t=${Date.now()}`, { cache: "no-store" });
+    if (!r2.ok) throw new Error("HTTP " + r2.status);
+    return await r2.text();
+  }
   const n_coeff = 0.025, S_slope = 0.001, ERR_THR = 10;
   let allRows = [];
   let photoMap = {};   // 농수로ID → [사진링크, ...]
@@ -224,9 +237,7 @@
     document.getElementById("dataContainer").innerHTML = '<div class="loading"><div class="spinner"></div>' + t("loading") + '</div>';
     lastUpdateTime = null; setLastUpdateLabel();
     try {
-      const res = await fetch(CSV_URL + "?t=" + Date.now());
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      allRows = parseCSV(await res.text()).reverse();
+      allRows = parseCSV(await fetchFresh("data.csv")).reverse();
       await loadPhotos();
       lastUpdateTime = new Date(); setLastUpdateLabel();
       updateSummary(); renderCards();
@@ -241,9 +252,7 @@
   async function loadPhotos() {
     photoMap = {};
     try {
-      const res = await fetch(PHOTOS_CSV_URL + "?t=" + Date.now());
-      if (!res.ok) return;
-      const text = (await res.text()).replace(/^\uFEFF/, "");
+      const text = (await fetchFresh("photos.csv")).replace(/^\uFEFF/, "");
       const lines = text.trim().split("\n").filter(l => l.trim());
       // 컬럼: 촬영시각,농수로ID,위도,경도,사진링크
       lines.slice(1).forEach(line => {
