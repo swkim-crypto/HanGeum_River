@@ -1,5 +1,6 @@
 import os
 import base64
+import time
 import unicodedata
 from datetime import datetime
 from fastapi import FastAPI, Form, File, UploadFile, HTTPException
@@ -18,6 +19,9 @@ CSV_HEADER = "조사일자,농수로ID,수로폭(m),수심(m),높이(m),유속1(
 
 def normalize(text: str) -> str:
     return unicodedata.normalize("NFC", text)
+
+PHOTOS_PATH   = "photos.csv"
+PHOTOS_HEADER = "촬영시각,농수로ID,위도,경도,사진링크\n"
 
 @app.get("/")
 def root():
@@ -97,3 +101,51 @@ async def upload_data(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"서버 에러: {str(e)}")
+
+
+@app.post("/upload_photo")
+async def upload_photo(
+    channel_id: str        = Form(""),
+    latitude:   str        = Form("0"),
+    longitude:  str        = Form("0"),
+    timestamp:  str        = Form(""),
+    image:      UploadFile = File(...)
+):
+    """현장 사진 일괄 전송용. 사진은 repo에 저장하고 photos.csv에 ID로 기록."""
+    try:
+        g    = Github(GITHUB_TOKEN)
+        repo = g.get_repo(REPO_NAME)
+        now      = normalize(timestamp) or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        date_str = datetime.now().strftime("%Y%m%d%H%M%S%f")
+
+        # 사진 저장 (파일명에 ID 포함)
+        safe_id        = "".join(c for c in normalize(channel_id) if c.isalnum() or c in "-_")
+        image_filename = f"photos/{date_str}_{safe_id}.jpg"
+        file_content   = await image.read()
+        repo.create_file(path=image_filename, message=f"Photo: {safe_id}", content=file_content, branch="main")
+        image_url = f"https://raw.githubusercontent.com/{REPO_NAME}/main/{image_filename}"
+
+        # photos.csv 누적 (동시/지연 충돌 시 sha 재조회 후 재시도)
+        new_row = f"{now},{normalize(channel_id)},{latitude},{longitude},{image_url}\n"
+        last_err = None
+        for attempt in range(5):
+            try:
+                try:
+                    contents     = repo.get_contents(PHOTOS_PATH, ref="main")
+                    existing_str = normalize(base64.b64decode(contents.content).decode("utf-8-sig", errors="ignore"))
+                    repo.update_file(PHOTOS_PATH, "Add photo row", existing_str + new_row, contents.sha, branch="main")
+                except Exception:
+                    # 파일이 없으면 생성
+                    repo.create_file(PHOTOS_PATH, "Create photos file", PHOTOS_HEADER + new_row, branch="main")
+                last_err = None
+                break
+            except Exception as ex:
+                last_err = ex
+                time.sleep(0.8)
+        if last_err is not None:
+            raise last_err
+
+        return {"status": "success", "url": image_url}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"사진 전송 에러: {str(e)}")

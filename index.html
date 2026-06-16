@@ -290,7 +290,8 @@
       photoNeedId: "사진 저장에는 농수로 ID가 필요합니다.", photoSaving: "저장 중…", photoDone: "📸 사진종료 (이 지점 저장)",
       photoSaved: "이 지점 사진을 저장했습니다. 다음 지점을 진행하세요.", photoSaveFail: "사진 저장 실패.",
       queueEmpty: "대기 중인 사진 없음", queuePending: "대기 중: {n}장 ({m}개 지점)",
-      batchProgress: "전송 중… {k}/{n}", batchDone: "✅ 전송 {ok}장 완료, 실패 {fail}장"
+      batchProgress: "전송 중… {k}/{n}", batchDone: "✅ 전송 {ok}장 완료, 실패 {fail}장",
+      batchPartial: "✅ {ok}장 전송됨 · {fail}장 남음 — [사진 일괄 전송]을 다시 누르면 남은 것만 재시도합니다."
     },
     en: {
       photoTap: "Tap to take photo", photoSelected: "✔ Photo selected (tap to change)",
@@ -302,7 +303,8 @@
       photoNeedId: "Channel ID is required to save photos.", photoSaving: "Saving…", photoDone: "📸 Finish photos (save site)",
       photoSaved: "Site photos saved. Continue to the next site.", photoSaveFail: "Failed to save photos.",
       queueEmpty: "No pending photos", queuePending: "Pending: {n} photos ({m} sites)",
-      batchProgress: "Sending… {k}/{n}", batchDone: "✅ {ok} sent, {fail} failed"
+      batchProgress: "Sending… {k}/{n}", batchDone: "✅ {ok} sent, {fail} failed",
+      batchPartial: "✅ {ok} sent · {fail} left — tap [Send all photos] again to retry the rest."
     }
   };
   const t = k => T[lang][k];
@@ -533,6 +535,8 @@
     for (let i = 0; i < all.length; i++) {
       const rec = all[i];
       bs.textContent = t("batchProgress").replace("{k}", i+1).replace("{n}", all.length);
+      const ctrl  = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 60000);   // 장당 60초 제한 (멈춤 방지)
       try {
         const fd = new FormData();
         fd.append("channel_id", rec.id);
@@ -540,12 +544,15 @@
         fd.append("longitude",  rec.lng);
         fd.append("timestamp",  rec.ts);
         fd.append("image",      rec.blob, "photo.jpg");
-        const res = await fetch(PHOTO_URL, { method: "POST", body: fd });
+        const res = await fetch(PHOTO_URL, { method: "POST", body: fd, signal: ctrl.signal });
         if (res.ok) { await dbDelete(rec.key); ok++; } else fail++;
       } catch (e) { fail++; }
+      finally { clearTimeout(timer); }
+      await new Promise(r => setTimeout(r, 300));   // 서버/깃허브 과부하 방지
     }
     await updatePhotoQueueUI();
-    bs.textContent = t("batchDone").replace("{ok}", ok).replace("{fail}", fail);
+    bs.textContent = (fail ? t("batchPartial") : t("batchDone"))
+      .replace("{ok}", ok).replace("{fail}", fail);
     btn.disabled = false;
   }
 
