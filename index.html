@@ -106,132 +106,151 @@
     .brand-logo { height: 30px; width: auto; flex-shrink: 0; }
     /* 삼안 버튼 안에 로고가 들어갈 경우 대비 */
     .device-btn img { width: 95%; height: auto; display: block; margin: 0 auto; }
+    /* 다중 사진 촬영 */
+    .thumb-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .thumb-row .thumb { position: relative; width: 62px; height: 62px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; }
+    .thumb-row .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .thumb-row .thumb .del { position: absolute; top: 0; right: 0; background: rgba(0,0,0,0.55); color: #fff; border: none; width: 20px; height: 20px; font-size: 12px; line-height: 1; cursor: pointer; border-radius: 0 0 0 7px; }
+    .btn-photo-done { width: 100%; margin-top: 8px; padding: 11px; background: #059669; color: #fff; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 700; font-family: inherit; cursor: pointer; }
+    .btn-photo-done:active { background: #047857; }
+    .btn-photo-done:disabled { background: #94d3bf; }
+    .queue-status { font-size: 0.92rem; font-weight: 700; color: #1e3a8a; text-align: center; margin-bottom: 10px; }
+    .btn-batch-send { width: 100%; padding: 14px; background: #7c3aed; color: #fff; border: none; border-radius: 11px; font-size: 1rem; font-weight: 800; font-family: inherit; cursor: pointer; }
+    .btn-batch-send:disabled { background: #cbd5e1; cursor: default; }
+    #batchStatus { font-size: 0.8rem; text-align: center; margin-top: 8px; color: #64748b; }
   </style>
 </head>
 <body>
 
 <div class="card">
   <div class="title-row">
-    <h2 data-ko="유속데이터 실측" data-en="Flow Velocity Measurement" data-ar="قياس سرعة التدفق">유속데이터 실측</h2>
+    <h2 data-ko="유속데이터 실측" data-en="Flow Velocity Measurement">유속데이터 실측</h2>
     <div class="lang-toggle">
       <button type="button" class="lang-btn active" id="langKo" onclick="setLang('ko')">한글</button>
       <button type="button" class="lang-btn" id="langEn" onclick="setLang('en')">EN</button>
-      <button type="button" class="lang-btn" id="langAr" onclick="setLang('ar')">عربي</button>
     </div>
   </div>
 
   <div class="form-group">
-    <label data-ko="농수로 ID" data-en="Channel ID" data-ar="معرّف القناة">농수로 ID</label>
-    <input type="text" id="channelId" placeholder="예: CH-001" data-ko-ph="예: CH-001" data-en-ph="e.g. CH-001" data-ar-ph="مثال: CH-001" required>
+    <label data-ko="농수로 ID" data-en="Channel ID">농수로 ID</label>
+    <input type="text" id="channelId" placeholder="예: CH-001" data-ko-ph="예: CH-001" data-en-ph="e.g. CH-001" required>
   </div>
 
-  <div class="section-label" data-ko="📐 수로 단면" data-en="📐 Cross-section" data-ar="📐 المقطع العرضي">📐 수로 단면</div>
+  <div class="section-label" data-ko="📐 수로 단면" data-en="📐 Cross-section">📐 수로 단면</div>
   <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:13px;">
-    <div><label data-ko="수로폭 B (m)" data-en="Width B (m)" data-ar="العرض B (م)">수로폭 B (m)</label><input type="number" id="width" step="0.001" placeholder="0.000" oninput="updateManning()"></div>
-    <div><label data-ko="높이 H&#39; (m)" data-en="Height H&#39; (m)" data-ar="الارتفاع H&#39; (م)">높이 H' (m)</label><input type="number" id="height" step="0.001" placeholder="0.000"></div>
-    <div><label data-ko="수심 H (m)" data-en="Depth H (m)" data-ar="العمق H (م)">수심 H (m)</label><input type="number" id="depth" step="0.001" placeholder="0.000" oninput="updateManning()"></div>
+    <div><label data-ko="수로폭 B (m)" data-en="Width B (m)">수로폭 B (m)</label><input type="number" id="width" step="0.001" placeholder="0.000" oninput="updateManning()"></div>
+    <div><label data-ko="높이 H&#39; (m)" data-en="Height H&#39; (m)">높이 H' (m)</label><input type="number" id="height" step="0.001" placeholder="0.000"></div>
+    <div><label data-ko="수심 H (m)" data-en="Depth H (m)">수심 H (m)</label><input type="number" id="depth" step="0.001" placeholder="0.000" oninput="updateManning()"></div>
   </div>
 
   <!-- 사용 장비 선택 -->
   <div class="form-group">
-    <label data-ko="사용 장비 (유속계)" data-en="Device (current meter)" data-ar="الجهاز (مقياس التدفق)">사용 장비 (유속계)</label>
+    <label data-ko="사용 장비 (유속계)" data-en="Device (current meter)">사용 장비 (유속계)</label>
     <div class="device-toggle">
       <button type="button" class="device-btn active" id="devSaman" onclick="setDevice('saman')"><img src="data:image/jpeg;base64,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" alt="SAMAN"></button>
-      <button type="button" class="device-btn" id="devHankyong" onclick="setDevice('hankyong')" data-ko="한경대" data-en="Hankyong" data-ar="Hankyong">한경대</button>
+      <button type="button" class="device-btn" id="devHankyong" onclick="setDevice('hankyong')" data-ko="한경대" data-en="Hankyong">한경대</button>
     </div>
   </div>
 
   <div class="form-group">
     <!-- 삼안: 유속 직접 입력 -->
     <div id="velocityGroup">
-      <label data-ko="실측 유속 3회 (m/s)" data-en="Measured velocity ×3 (m/s)" data-ar="السرعة المقاسة ×3 (م/ث)">실측 유속 3회 (m/s)</label>
+      <label data-ko="실측 유속 3회 (m/s)" data-en="Measured velocity ×3 (m/s)">실측 유속 3회 (m/s)</label>
       <div class="velocity-grid">
-        <input type="number" id="v1" step="0.001" placeholder="1차" data-ko-ph="1차" data-en-ph="1st" data-ar-ph="1" oninput="updateVelocity()">
-        <input type="number" id="v2" step="0.001" placeholder="2차" data-ko-ph="2차" data-en-ph="2nd" data-ar-ph="2" oninput="updateVelocity()">
-        <input type="number" id="v3" step="0.001" placeholder="3차" data-ko-ph="3차" data-en-ph="3rd" data-ar-ph="3" oninput="updateVelocity()">
+        <input type="number" id="v1" step="0.001" placeholder="1차" data-ko-ph="1차" data-en-ph="1st" oninput="updateVelocity()">
+        <input type="number" id="v2" step="0.001" placeholder="2차" data-ko-ph="2차" data-en-ph="2nd" oninput="updateVelocity()">
+        <input type="number" id="v3" step="0.001" placeholder="3차" data-ko-ph="3차" data-en-ph="3rd" oninput="updateVelocity()">
       </div>
     </div>
 
     <!-- 한경대: rpm 입력 → 유속 자동 환산 -->
     <div id="rpmGroup" style="display:none;">
-      <label data-ko="측정 rpm 3회 → 유속 자동 환산" data-en="Measured RPM ×3 → auto velocity" data-ar="دورة/دقيقة ×3 ← تحويل تلقائي للسرعة">측정 rpm 3회 → 유속 자동 환산</label>
+      <label data-ko="측정 rpm 3회 → 유속 자동 환산" data-en="Measured RPM ×3 → auto velocity">측정 rpm 3회 → 유속 자동 환산</label>
       <div class="velocity-grid">
-        <input type="number" id="rpm1" step="0.1" placeholder="rpm 1차" data-ko-ph="rpm 1차" data-en-ph="RPM 1st" data-ar-ph="RPM 1" oninput="updateVelocity()">
-        <input type="number" id="rpm2" step="0.1" placeholder="rpm 2차" data-ko-ph="rpm 2차" data-en-ph="RPM 2nd" data-ar-ph="RPM 2" oninput="updateVelocity()">
-        <input type="number" id="rpm3" step="0.1" placeholder="rpm 3차" data-ko-ph="rpm 3차" data-en-ph="RPM 3rd" data-ar-ph="RPM 3" oninput="updateVelocity()">
+        <input type="number" id="rpm1" step="0.1" placeholder="rpm 1차" data-ko-ph="rpm 1차" data-en-ph="RPM 1st" oninput="updateVelocity()">
+        <input type="number" id="rpm2" step="0.1" placeholder="rpm 2차" data-ko-ph="rpm 2차" data-en-ph="RPM 2nd" oninput="updateVelocity()">
+        <input type="number" id="rpm3" step="0.1" placeholder="rpm 3차" data-ko-ph="rpm 3차" data-en-ph="RPM 3rd" oninput="updateVelocity()">
       </div>
       <div class="rpm-readout">
-        <div><span class="rl" data-ko="1차 유속" data-en="1st V" data-ar="السرعة 1">1차 유속</span><span class="rv" id="conv1">—</span></div>
-        <div><span class="rl" data-ko="2차 유속" data-en="2nd V" data-ar="السرعة 2">2차 유속</span><span class="rv" id="conv2">—</span></div>
-        <div><span class="rl" data-ko="3차 유속" data-en="3rd V" data-ar="السرعة 3">3차 유속</span><span class="rv" id="conv3">—</span></div>
+        <div><span class="rl" data-ko="1차 유속" data-en="1st V">1차 유속</span><span class="rv" id="conv1">—</span></div>
+        <div><span class="rl" data-ko="2차 유속" data-en="2nd V">2차 유속</span><span class="rv" id="conv2">—</span></div>
+        <div><span class="rl" data-ko="3차 유속" data-en="3rd V">3차 유속</span><span class="rv" id="conv3">—</span></div>
       </div>
-      <div style="font-size:0.72rem;color:#6b7280;margin:0 0 8px;" data-ko="n = rpm ÷ 30 → 유속 환산식 적용" data-en="n = rpm ÷ 30 → velocity formula applied" data-ar="n = دورة/دقيقة ÷ 30 ← تطبيق معادلة السرعة">n = rpm ÷ 30 → 유속 환산식 적용</div>
+      <div style="font-size:0.72rem;color:#6b7280;margin:0 0 8px;" data-ko="n = rpm ÷ 30 → 유속 환산식 적용" data-en="n = rpm ÷ 30 → velocity formula applied">n = rpm ÷ 30 → 유속 환산식 적용</div>
     </div>
 
-    <div class="avg-display"><span data-ko="평균 유속" data-en="Average velocity" data-ar="متوسط السرعة">평균 유속</span>: <span id="avgDisplay">— m/s</span></div>
+    <div class="avg-display"><span data-ko="평균 유속" data-en="Average velocity">평균 유속</span>: <span id="avgDisplay">— m/s</span></div>
   </div>
 
   <div id="manningBox">
-    <h3 data-ko="📐 매닝 유량 미리보기" data-en="📐 Manning flow preview" data-ar="📐 معاينة تدفق مانينغ">📐 매닝 유량 미리보기</h3>
+    <h3 data-ko="📐 매닝 유량 미리보기" data-en="📐 Manning flow preview">📐 매닝 유량 미리보기</h3>
     <div class="manning-grid">
-      <span class="label" data-ko="단면적 A" data-en="Area A" data-ar="المساحة A">단면적 A</span><span class="val" id="mA">-</span>
-      <span class="label" data-ko="윤변 P" data-en="Wetted perim. P" data-ar="المحيط المبلل P">윤변 P</span>   <span class="val" id="mP">-</span>
-      <span class="label" data-ko="경심 R" data-en="Hyd. radius R" data-ar="نصف القطر الهيدروليكي R">경심 R</span>   <span class="val" id="mR">-</span>
-      <span class="label" data-ko="실측유량 Q" data-en="Measured Q" data-ar="التدفق المقاس Q">실측유량 Q</span><span class="val" id="mQ">-</span>
-      <span class="label" data-ko="매닝유량 Qm" data-en="Manning Qm" data-ar="تدفق مانينغ Qm">매닝유량 Qm</span><span class="val" id="mQm">-</span>
-      <span class="label" data-ko="오차율" data-en="Error %" data-ar="نسبة الخطأ %">오차율</span>   <span class="val" id="mErr">-</span>
+      <span class="label" data-ko="단면적 A" data-en="Area A">단면적 A</span><span class="val" id="mA">-</span>
+      <span class="label" data-ko="윤변 P" data-en="Wetted perim. P">윤변 P</span>   <span class="val" id="mP">-</span>
+      <span class="label" data-ko="경심 R" data-en="Hyd. radius R">경심 R</span>   <span class="val" id="mR">-</span>
+      <span class="label" data-ko="실측유량 Q" data-en="Measured Q">실측유량 Q</span><span class="val" id="mQ">-</span>
+      <span class="label" data-ko="매닝유량 Qm" data-en="Manning Qm">매닝유량 Qm</span><span class="val" id="mQm">-</span>
+      <span class="label" data-ko="오차율" data-en="Error %">오차율</span>   <span class="val" id="mErr">-</span>
     </div>
-    <div style="font-size:0.75rem;color:#6b7280;margin-top:8px;" data-ko="n=0.025, S=1/1000 (기본값)" data-en="n=0.025, S=1/1000 (default)" data-ar="n=0.025, S=1/1000 (افتراضي)">n=0.025, S=1/1000 (기본값)</div>
+    <div style="font-size:0.75rem;color:#6b7280;margin-top:8px;" data-ko="n=0.025, S=1/1000 (기본값)" data-en="n=0.025, S=1/1000 (default)">n=0.025, S=1/1000 (기본값)</div>
   </div>
 
   <div class="form-group" style="margin-top:13px;">
-    <label data-ko="특이사항 메모" data-en="Remarks" data-ar="ملاحظات">특이사항 메모</label>
-    <textarea id="memo" placeholder="예: 수초 많음, 부유물 있음, 호안 손상 등" data-ko-ph="예: 수초 많음, 부유물 있음, 호안 손상 등" data-en-ph="e.g. heavy weeds, debris, bank damage" data-ar-ph="مثال: أعشاب كثيفة، حطام، تلف الضفة"></textarea>
+    <label data-ko="특이사항 메모" data-en="Remarks">특이사항 메모</label>
+    <textarea id="memo" placeholder="예: 수초 많음, 부유물 있음, 호안 손상 등" data-ko-ph="예: 수초 많음, 부유물 있음, 호안 손상 등" data-en-ph="e.g. heavy weeds, debris, bank damage"></textarea>
   </div>
 
-  <!-- 사진 촬영 → 팝업 트리거 -->
+  <!-- 현장 사진 (여러 장 → 로컬 저장 → 일괄 전송) -->
   <div class="form-group">
-    <label data-ko="현장 사진 촬영" data-en="Site photo" data-ar="صورة الموقع">현장 사진 촬영</label>
+    <label data-ko="현장 사진 (여러 장 가능)" data-en="Site photos (multiple)">현장 사진 (여러 장 가능)</label>
     <div class="photo-area" id="photoArea" onclick="document.getElementById('photo').click()">
       <div class="photo-icon">📷</div>
-      <div class="photo-label-text" id="photoLabelText">탭하여 사진 촬영</div>
-      <img id="photoPreview" alt="사진 미리보기">
+      <div class="photo-label-text" id="photoLabelText" data-ko="탭하여 사진 추가" data-en="Tap to add photo">탭하여 사진 추가</div>
     </div>
     <input type="file" id="photo" accept="image/*" capture="environment" style="display:none">
+    <div class="thumb-row" id="stagingThumbs"></div>
+    <button type="button" class="btn-photo-done" id="btnPhotoDone" onclick="finishLocationPhotos()" style="display:none" data-ko="📸 사진종료 (이 지점 저장)" data-en="📸 Finish photos (save site)">📸 사진종료 (이 지점 저장)</button>
   </div>
 
-  <button type="button" class="btn-send-direct" id="btnSendDirect" onclick="directUpload()" data-ko="📤 서버전송" data-en="📤 Send to server" data-ar="📤 إرسال إلى الخادم">📤 서버전송</button>
-  <div class="send-hint" data-ko="유속(또는 rpm)만 입력하면 사진·ID·단면 없이도 전송됩니다. 사진을 촬영하면 GPS·방위각이 함께 저장됩니다." data-en="Enter velocity (or RPM) only and you can send without photo/ID/section. Taking a photo also records GPS &amp; heading." data-ar="أدخل السرعة (أو دورة/دقيقة) فقط ويمكنك الإرسال دون صورة/معرّف/مقطع. التقاط صورة يسجّل أيضًا GPS والاتجاه.">유속(또는 rpm)만 입력하면 사진·ID·단면 없이도 전송됩니다. 사진을 촬영하면 GPS·방위각이 함께 저장됩니다.</div>
+  <button type="button" class="btn-send-direct" id="btnSendDirect" onclick="directUpload()" data-ko="📤 서버전송" data-en="📤 Send to server">📤 서버전송</button>
+  <div class="send-hint" data-ko="측정값은 유속(또는 rpm)만 입력하면 바로 전송됩니다. 사진은 아래 [사진종료]로 모아 일괄 전송하세요." data-en="Measurements send instantly with just velocity (or RPM). Collect photos via [Finish photos] below and send them in a batch.">측정값은 유속(또는 rpm)만 입력하면 바로 전송됩니다. 사진은 아래 [사진종료]로 모아 일괄 전송하세요.</div>
 
   <div id="statusMsg"></div>
 </div>
 
+<!-- 사진 큐 + 일괄 전송 -->
+<div class="card">
+  <div class="queue-status" id="queueStatus"></div>
+  <button type="button" class="btn-batch-send" id="btnBatchSend" onclick="batchSendPhotos()" disabled data-ko="📤 사진 일괄 전송" data-en="📤 Send all photos">📤 사진 일괄 전송</button>
+  <div id="batchStatus"></div>
+</div>
+
 <div class="card" style="font-size:0.84rem; color:#64748b; line-height:1.8;">
-  <strong style="color:#1e3a8a;" data-ko="💡 사용 안내" data-en="💡 How to use" data-ar="💡 طريقة الاستخدام">💡 사용 안내</strong><br>
-  <span data-ko="① ID·단면 입력 → ② 장비 선택(삼안=유속 / 한경대=rpm) → ③ 3회 측정 → ④ 메모 → ⑤ 사진 촬영" data-en="① ID &amp; section → ② Device (SAMAN=velocity / Hankyong=RPM) → ③ Measure ×3 → ④ Memo → ⑤ Photo" data-ar="① المعرّف والمقطع ← ② الجهاز (SAMAN=السرعة / Hankyong=دورة/دقيقة) ← ③ القياس ×3 ← ④ ملاحظة ← ⑤ صورة">① ID·단면 입력 → ② 장비 선택(삼안=유속 / 한경대=rpm) → ③ 3회 측정 → ④ 메모 → ⑤ 사진 촬영</span><br>
-  <span data-ko="📷 사진 촬영 즉시 GPS+방위각 자동 취득 → 확인 후 바로 전송" data-en="📷 Photo captures GPS + heading → confirm &amp; send" data-ar="📷 الصورة تلتقط GPS والاتجاه ← التأكيد والإرسال">📷 사진 촬영 즉시 GPS+방위각 자동 취득 → 확인 후 바로 전송</span>
+  <strong style="color:#1e3a8a;" data-ko="💡 사용 안내" data-en="💡 How to use">💡 사용 안내</strong><br>
+  <span data-ko="① ID·단면 입력 → ② 장비 선택(삼안=유속 / 한경대=rpm) → ③ 3회 측정 → ④ 메모 → ⑤ 서버전송" data-en="① ID &amp; section → ② Device (SAMAN=velocity / Hankyong=RPM) → ③ Measure ×3 → ④ Memo → ⑤ Send">① ID·단면 입력 → ② 장비 선택(삼안=유속 / 한경대=rpm) → ③ 3회 측정 → ④ 메모 → ⑤ 서버전송</span><br>
+  <span data-ko="📷 사진은 지점마다 여러 장 찍고 [사진종료] → 신호 좋을 때 [사진 일괄 전송]" data-en="📷 Shoot multiple photos per site, tap [Finish photos] → then [Send all photos] when online">📷 사진은 지점마다 여러 장 찍고 [사진종료] → 신호 좋을 때 [사진 일괄 전송]</span>
 </div>
 
 <!-- ── 확인 팝업 ──────────────────────────────────── -->
 <div class="popup-overlay" id="popupOverlay">
   <div class="popup-box">
-    <div class="popup-header" data-ko="📍 위치·방향 확인 및 전송" data-en="📍 Confirm location &amp; send" data-ar="📍 تأكيد الموقع والإرسال">📍 위치·방향 확인 및 전송</div>
+    <div class="popup-header" data-ko="📍 위치·방향 확인 및 전송" data-en="📍 Confirm location &amp; send">📍 위치·방향 확인 및 전송</div>
     <div class="popup-body">
       <img class="popup-photo" id="popupPhoto" src="" alt="현장사진">
 
       <div class="popup-info-row">
         <span class="popup-info-icon">📍</span>
-        <span class="popup-info-label" data-ko="위도" data-en="Latitude" data-ar="خط العرض">위도</span>
+        <span class="popup-info-label" data-ko="위도" data-en="Latitude">위도</span>
         <span class="popup-info-val loading" id="popupLat"><span class="spinner-sm"></span>취득 중…</span>
       </div>
       <div class="popup-info-row">
         <span class="popup-info-icon">📍</span>
-        <span class="popup-info-label" data-ko="경도" data-en="Longitude" data-ar="خط الطول">경도</span>
+        <span class="popup-info-label" data-ko="경도" data-en="Longitude">경도</span>
         <span class="popup-info-val loading" id="popupLng"><span class="spinner-sm"></span>취득 중…</span>
       </div>
       <div class="popup-info-row">
         <span class="popup-info-icon">🧭</span>
-        <span class="popup-info-label" data-ko="촬영방향" data-en="Direction" data-ar="الاتجاه">촬영방향</span>
+        <span class="popup-info-label" data-ko="촬영방향" data-en="Direction">촬영방향</span>
         <div class="popup-compass">
           <div class="compass-circle"><span class="compass-arrow" id="popupArrow">↑</span></div>
           <span class="popup-info-val loading" id="popupHeading"><span class="spinner-sm"></span>취득 중…</span>
@@ -239,7 +258,7 @@
       </div>
     </div>
     <div class="popup-footer">
-      <button class="btn-cancel" onclick="closePopup()" data-ko="✕ 취소" data-en="✕ Cancel" data-ar="✕ إلغاء">✕ 취소</button>
+      <button class="btn-cancel" onclick="closePopup()" data-ko="✕ 취소" data-en="✕ Cancel">✕ 취소</button>
       <button class="btn-confirm" id="btnConfirm" disabled onclick="confirmAndUpload()">
         <span id="btnConfirmText">⏳ 좌표 취득 중…</span>
       </button>
@@ -249,6 +268,7 @@
 
 <script>
   const SERVER_URL = "https://hangeum-river.onrender.com/upload";
+  const PHOTO_URL  = "https://hangeum-river.onrender.com/upload_photo";
   const n = 0.025, S = 0.001;
 
   let currentLat     = null;
@@ -266,7 +286,11 @@
       confirmAcq: "⏳ 좌표 취득 중…", confirmReady: "✔ 확인 및 전송", confirmNoGps: "⚠ GPS 없이 전송",
       locating: "📍 좌표 취득 중…", sending: "서버 전송 중… (최대 40초)",
       sentOk: "✅ 전송 완료!", serverErr: "❌ 서버 오류: ", netErr: "❌ 전송 실패: 네트워크를 확인하세요.",
-      unknownErr: "알 수 없는 오류", needVel: "유속을 최소 1회 입력해주세요.", needRpm: "rpm을 최소 1회 입력해주세요."
+      unknownErr: "알 수 없는 오류", needVel: "유속을 최소 1회 입력해주세요.", needRpm: "rpm을 최소 1회 입력해주세요.",
+      photoNeedId: "사진 저장에는 농수로 ID가 필요합니다.", photoSaving: "저장 중…", photoDone: "📸 사진종료 (이 지점 저장)",
+      photoSaved: "이 지점 사진을 저장했습니다. 다음 지점을 진행하세요.", photoSaveFail: "사진 저장 실패.",
+      queueEmpty: "대기 중인 사진 없음", queuePending: "대기 중: {n}장 ({m}개 지점)",
+      batchProgress: "전송 중… {k}/{n}", batchDone: "✅ 전송 {ok}장 완료, 실패 {fail}장"
     },
     en: {
       photoTap: "Tap to take photo", photoSelected: "✔ Photo selected (tap to change)",
@@ -274,36 +298,29 @@
       confirmAcq: "⏳ Acquiring location…", confirmReady: "✔ Confirm & Send", confirmNoGps: "⚠ Send without GPS",
       locating: "📍 Acquiring location…", sending: "Sending… (up to 40s)",
       sentOk: "✅ Sent!", serverErr: "❌ Server error: ", netErr: "❌ Send failed: check your network.",
-      unknownErr: "Unknown error", needVel: "Enter at least one velocity.", needRpm: "Enter at least one RPM."
-    },
-    ar: {
-      photoTap: "اضغط لالتقاط صورة", photoSelected: "✔ تم اختيار الصورة (اضغط للتغيير)",
-      acquiring: "جارٍ التحديد…", acqFail: "فشل",
-      confirmAcq: "⏳ جارٍ تحديد الموقع…", confirmReady: "✔ تأكيد وإرسال", confirmNoGps: "⚠ إرسال بدون GPS",
-      locating: "📍 جارٍ تحديد الموقع…", sending: "جارٍ الإرسال… (حتى 40 ثانية)",
-      sentOk: "✅ تم الإرسال!", serverErr: "❌ خطأ في الخادم: ", netErr: "❌ فشل الإرسال: تحقق من الشبكة.",
-      unknownErr: "خطأ غير معروف", needVel: "أدخل سرعة واحدة على الأقل.", needRpm: "أدخل قيمة دورة/دقيقة واحدة على الأقل."
+      unknownErr: "Unknown error", needVel: "Enter at least one velocity.", needRpm: "Enter at least one RPM.",
+      photoNeedId: "Channel ID is required to save photos.", photoSaving: "Saving…", photoDone: "📸 Finish photos (save site)",
+      photoSaved: "Site photos saved. Continue to the next site.", photoSaveFail: "Failed to save photos.",
+      queueEmpty: "No pending photos", queuePending: "Pending: {n} photos ({m} sites)",
+      batchProgress: "Sending… {k}/{n}", batchDone: "✅ {ok} sent, {fail} failed"
     }
   };
   const t = k => T[lang][k];
 
   function setLang(l) {
     lang = l;
-    ["ko","en","ar"].forEach(x => {
+    ["ko","en"].forEach(x => {
       const btn = document.getElementById("lang" + x.charAt(0).toUpperCase() + x.slice(1));
       if (btn) btn.classList.toggle("active", x === l);
     });
     document.documentElement.lang = l;
-    document.documentElement.dir = (l === "ar") ? "rtl" : "ltr";
     document.querySelectorAll("[data-ko]").forEach(el => {
       el.textContent = el.getAttribute("data-" + l) || el.getAttribute("data-ko");
     });
     document.querySelectorAll("[data-ko-ph]").forEach(el => {
       el.placeholder = el.getAttribute("data-" + l + "-ph") || el.getAttribute("data-ko-ph");
     });
-    // 사진 라벨은 선택 상태에 따라 동적
-    const hasPhoto = document.getElementById("photo").files.length > 0;
-    document.getElementById("photoLabelText").textContent = hasPhoto ? t("photoSelected") : t("photoTap");
+    updatePhotoQueueUI();
   }
 
   /* ── 나침반 시작 ── */
@@ -418,22 +435,119 @@
     box.style.display = "block";
   }
 
-  /* ── 사진 선택 → 팝업 오픈 ── */
+  /* ── 다중 사진: 스테이징 + IndexedDB 큐 + 일괄 전송 ── */
+  let staging = [];            // 현재 지점에 찍은 사진 [{blob,url}]
+  let photoDB = null;
+
+  function openPhotoDB() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open("hangeumPhotos", 1);
+      req.onupgradeneeded = e => e.target.result.createObjectStore("queue", { keyPath: "key", autoIncrement: true });
+      req.onsuccess = e => { photoDB = e.target.result; resolve(photoDB); };
+      req.onerror  = e => reject(e);
+    });
+  }
+  function dbAll() {
+    return new Promise((res, rej) => {
+      const r = photoDB.transaction("queue", "readonly").objectStore("queue").getAll();
+      r.onsuccess = () => res(r.result); r.onerror = e => rej(e);
+    });
+  }
+  function dbAdd(rec) {
+    return new Promise((res, rej) => {
+      const tx = photoDB.transaction("queue", "readwrite"); tx.objectStore("queue").add(rec);
+      tx.oncomplete = () => res(); tx.onerror = e => rej(e);
+    });
+  }
+  function dbDelete(key) {
+    return new Promise((res, rej) => {
+      const tx = photoDB.transaction("queue", "readwrite"); tx.objectStore("queue").delete(key);
+      tx.oncomplete = () => res(); tx.onerror = e => rej(e);
+    });
+  }
+
+  // 사진 추가 (탭마다 1장)
   document.getElementById("photo").addEventListener("change", e => {
     const file = e.target.files[0];
+    e.target.value = "";
     if (!file) return;
-
-    // 사진 미리보기 업데이트
-    const previewUrl = URL.createObjectURL(file);
-    document.getElementById("photoPreview").src = previewUrl;
-    document.getElementById("photoPreview").style.display = "block";
-    document.getElementById("photoArea").classList.add("has-photo");
-    document.getElementById("photoLabelText").textContent = t("photoSelected");
-    document.getElementById("popupPhoto").src = previewUrl;
-
-    // 팝업 초기화 후 오픈
-    openPopup();
+    staging.push({ blob: file, url: URL.createObjectURL(file) });
+    renderStaging();
   });
+
+  function renderStaging() {
+    const wrap = document.getElementById("stagingThumbs");
+    wrap.innerHTML = staging.map((s, i) =>
+      `<div class="thumb"><img src="${s.url}"><button type="button" class="del" onclick="removeStaging(${i})">✕</button></div>`).join("");
+    document.getElementById("btnPhotoDone").style.display = staging.length ? "block" : "none";
+    document.getElementById("photoArea").classList.toggle("has-photo", staging.length > 0);
+  }
+  function removeStaging(i) { URL.revokeObjectURL(staging[i].url); staging.splice(i, 1); renderStaging(); }
+
+  // 사진종료: 이 지점 사진들을 ID·좌표와 함께 로컬 저장
+  async function finishLocationPhotos() {
+    if (!staging.length) return;
+    const id = document.getElementById("channelId").value.trim();
+    if (!id) { alert(t("photoNeedId")); return; }
+    const btn = document.getElementById("btnPhotoDone");
+    btn.disabled = true; btn.textContent = t("photoSaving");
+    if (currentLat === null || currentLat === "0") { startCompass(); await acquireGPS(); }
+    const lat = currentLat || "0", lng = currentLng || "0";
+    const ts = new Date().toISOString().slice(0,19).replace("T"," ");
+    try {
+      for (const s of staging) await dbAdd({ id, lat, lng, ts, blob: s.blob });
+      staging.forEach(s => URL.revokeObjectURL(s.url));
+      staging = []; renderStaging();
+      currentLat = null; currentLng = null;   // 다음 지점 위해 초기화
+      await updatePhotoQueueUI();
+      alert(t("photoSaved"));
+    } catch (err) {
+      alert(t("photoSaveFail"));
+    }
+    btn.disabled = false; btn.textContent = t("photoDone");
+  }
+
+  async function updatePhotoQueueUI() {
+    const status = document.getElementById("queueStatus");
+    const btn    = document.getElementById("btnBatchSend");
+    if (!status || !btn) return;
+    if (!photoDB) { status.textContent = t("queueEmpty"); btn.disabled = true; return; }
+    const all = await dbAll();
+    const sites = new Set(all.map(r => r.id)).size;
+    if (!all.length) { status.textContent = t("queueEmpty"); btn.disabled = true; }
+    else {
+      status.textContent = t("queuePending").replace("{n}", all.length).replace("{m}", sites);
+      btn.disabled = false;
+    }
+  }
+
+  // 일괄 전송: 큐의 사진을 하나씩 서버로 (성공한 것만 큐에서 삭제)
+  async function batchSendPhotos() {
+    if (!photoDB) return;
+    const all = await dbAll();
+    if (!all.length) return;
+    const btn = document.getElementById("btnBatchSend");
+    const bs  = document.getElementById("batchStatus");
+    btn.disabled = true;
+    let ok = 0, fail = 0;
+    for (let i = 0; i < all.length; i++) {
+      const rec = all[i];
+      bs.textContent = t("batchProgress").replace("{k}", i+1).replace("{n}", all.length);
+      try {
+        const fd = new FormData();
+        fd.append("channel_id", rec.id);
+        fd.append("latitude",   rec.lat);
+        fd.append("longitude",  rec.lng);
+        fd.append("timestamp",  rec.ts);
+        fd.append("image",      rec.blob, "photo.jpg");
+        const res = await fetch(PHOTO_URL, { method: "POST", body: fd });
+        if (res.ok) { await dbDelete(rec.key); ok++; } else fail++;
+      } catch (e) { fail++; }
+    }
+    await updatePhotoQueueUI();
+    bs.textContent = t("batchDone").replace("{ok}", ok).replace("{fail}", fail);
+    btn.disabled = false;
+  }
 
   function openPopup() {
     // 팝업 초기 상태
@@ -539,7 +653,6 @@
     }
     const deviceName  = device === "hankyong" ? "한경대" : "삼안";
     const memo  = document.getElementById("memo").value.trim();
-    const photo = document.getElementById("photo").files[0];
     const avgVelocity = (validVels.reduce((a,b)=>a+b,0)/validVels.length).toFixed(3);
 
     const fd = new FormData();
@@ -555,7 +668,6 @@
     fd.append("memo",      memo);
     fd.append("latitude",  currentLat || "0");
     fd.append("longitude", currentLng || "0");
-    if (photo) fd.append("image", photo);        // 사진은 있을 때만 첨부
     fd.append("device", deviceName);
     fd.append("rpm1", rpm1); fd.append("rpm2", rpm2); fd.append("rpm3", rpm3);
     fd.append("n1", n1);     fd.append("n2", n2);     fd.append("n3", n3);
@@ -631,13 +743,15 @@
     ["conv1","conv2","conv3"].forEach(id => document.getElementById(id).textContent = "—");
     document.getElementById("avgDisplay").textContent = "— m/s";
     document.getElementById("manningBox").style.display = "none";
-    document.getElementById("photo").value = "";
-    document.getElementById("photoPreview").style.display = "none";
-    document.getElementById("photoArea").classList.remove("has-photo");
-    document.getElementById("photoLabelText").textContent = t("photoTap");
     currentLat = null; currentLng = null; currentHeading = null;
     setDevice("saman");
   }
+
+  // 사진 큐 초기화 (새로고침 후에도 대기 사진 유지)
+  openPhotoDB().then(updatePhotoQueueUI).catch(() => {
+    const s = document.getElementById("queueStatus");
+    if (s) s.textContent = t("queueEmpty");
+  });
 </script>
 </body>
 </html>

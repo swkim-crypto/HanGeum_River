@@ -38,6 +38,11 @@
     .velocity-row .avg-col { background: #dbeafe; border-radius: 6px; padding: 2px 4px; }
     .manning-section { background: #f0fdf4; border-radius: 9px; padding: 10px 12px; margin-bottom: 10px; }
     .manning-section h4 { margin: 0 0 8px; font-size: 0.82rem; color: #047857; }
+    .photo-section { margin-bottom: 10px; }
+    .photo-section h4 { margin: 0 0 8px; font-size: 0.82rem; color: #1e3a8a; }
+    .photo-gallery { display: flex; flex-wrap: wrap; gap: 6px; }
+    .photo-gallery .pg-item { width: 72px; height: 72px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; display: block; }
+    .photo-gallery .pg-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .manning-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; font-size: 0.82rem; text-align: center; }
     .mg-item .mg-lbl { color: #6b7280; font-size: 0.72rem; }
     .mg-item .mg-val { font-weight: 700; color: #065f46; }
@@ -75,26 +80,25 @@
     <div class="lang-toggle">
       <button type="button" class="lang-btn active" id="langKo" onclick="setLang('ko')">한글</button>
       <button type="button" class="lang-btn" id="langEn" onclick="setLang('en')">EN</button>
-      <button type="button" class="lang-btn" id="langAr" onclick="setLang('ar')">عربي</button>
     </div>
-    <button class="refresh-btn" onclick="loadData()" data-ko="🔄 새로고침" data-en="🔄 Refresh" data-ar="🔄 تحديث">🔄 새로고침</button>
+    <button class="refresh-btn" onclick="loadData()" data-ko="🔄 새로고침" data-en="🔄 Refresh">🔄 새로고침</button>
   </div>
-  <h1 data-ko="🌊 농수로 현장 조회" data-en="🌊 Field Data Review" data-ar="🌊 مراجعة بيانات الموقع">🌊 농수로 현장 조회</h1>
+  <h1 data-ko="🌊 농수로 현장 조회" data-en="🌊 Field Data Review">🌊 농수로 현장 조회</h1>
   <div class="header-meta" id="lastUpdate">불러오는 중…</div>
 </div>
 
 <div class="summary-grid">
-  <div class="stat-card"><div class="num" id="statTotal">-</div><div class="lbl" data-ko="전체 측정" data-en="Total" data-ar="الإجمالي">전체 측정</div></div>
-  <div class="stat-card ok"><div class="num" id="statOk">-</div><div class="lbl" data-ko="✔ 적합" data-en="✔ Pass" data-ar="✔ مطابق">✔ 적합</div></div>
-  <div class="stat-card warn"><div class="num" id="statWarn">-</div><div class="lbl" data-ko="⚠ 재측 필요" data-en="⚠ Re-measure" data-ar="⚠ إعادة القياس">⚠ 재측 필요</div></div>
+  <div class="stat-card"><div class="num" id="statTotal">-</div><div class="lbl" data-ko="전체 측정" data-en="Total">전체 측정</div></div>
+  <div class="stat-card ok"><div class="num" id="statOk">-</div><div class="lbl" data-ko="✔ 적합" data-en="✔ Pass">✔ 적합</div></div>
+  <div class="stat-card warn"><div class="num" id="statWarn">-</div><div class="lbl" data-ko="⚠ 재측 필요" data-en="⚠ Re-measure">⚠ 재측 필요</div></div>
 </div>
 
 <div class="filter-bar">
-  <input type="text" id="filterText" placeholder="🔍 수로ID 검색…" data-ko-ph="🔍 수로ID 검색…" data-en-ph="🔍 Search Channel ID…" data-ar-ph="🔍 بحث عن معرّف القناة…" oninput="renderCards()">
+  <input type="text" id="filterText" placeholder="🔍 수로ID 검색…" data-ko-ph="🔍 수로ID 검색…" data-en-ph="🔍 Search Channel ID…" oninput="renderCards()">
   <select id="filterJudge" onchange="renderCards()">
-    <option value="" data-ko="전체" data-en="All" data-ar="الكل">전체</option>
-    <option value="ok" data-ko="✔ 적합만" data-en="✔ Pass only" data-ar="✔ المطابق فقط">✔ 적합만</option>
-    <option value="warn" data-ko="⚠ 재측만" data-en="⚠ Re-measure only" data-ar="⚠ إعادة القياس فقط">⚠ 재측만</option>
+    <option value="" data-ko="전체" data-en="All">전체</option>
+    <option value="ok" data-ko="✔ 적합만" data-en="✔ Pass only">✔ 적합만</option>
+    <option value="warn" data-ko="⚠ 재측만" data-en="⚠ Re-measure only">⚠ 재측만</option>
   </select>
 </div>
 
@@ -104,8 +108,10 @@
 
 <script>
   const CSV_URL = "https://raw.githubusercontent.com/swkim-crypto/HanGeum_River/main/data.csv";
+  const PHOTOS_CSV_URL = "https://raw.githubusercontent.com/swkim-crypto/HanGeum_River/main/photos.csv";
   const n_coeff = 0.025, S_slope = 0.001, ERR_THR = 10;
   let allRows = [];
+  let photoMap = {};   // 농수로ID → [사진링크, ...]
   const activeMaps = {};
   let lastUpdateTime = null;
 
@@ -120,7 +126,7 @@
       vel1:"1차", vel2:"2차", vel3:"3차", avg:"평균",
       mannTitle:"📐 매닝 계산", aA:"단면적 A", aP:"윤변 P", aR:"경심 R", aQm:"매닝 유량 Qm", aQ:"실측 유량 Q",
       errLabel:"오차율", errWarn:"— 재측정 검토 필요", errOk:"— 측정값 신뢰 가능",
-      mapGoogle:"🗺 구글맵", mapKakao:"🗺 카카오맵", headingLabel:"방위각"
+      mapGoogle:"🗺 구글맵", mapKakao:"🗺 카카오맵", headingLabel:"방위각", photoTitle:"📷 현장 사진 ({n}장)"
     },
     en: {
       loadingMeta:"Loading…", updated:"Updated: ", loadFail:"Load failed",
@@ -130,25 +136,14 @@
       vel1:"1st", vel2:"2nd", vel3:"3rd", avg:"Avg",
       mannTitle:"📐 Manning calc.", aA:"Area A", aP:"Wetted P", aR:"Hyd. R", aQm:"Manning Qm", aQ:"Measured Q",
       errLabel:"Error", errWarn:"— review / re-measure", errOk:"— within tolerance",
-      mapGoogle:"🗺 Google Maps", mapKakao:"🗺 Kakao Map", headingLabel:"Heading"
-    },
-    ar: {
-      loadingMeta:"جارٍ التحميل…", updated:"آخر تحديث: ", loadFail:"فشل التحميل",
-      loading:"جارٍ تحميل البيانات…", errLoad:"❌ تعذّر تحميل البيانات.", empty:"لا توجد بيانات مطابقة.",
-      rpmTitle:"🔢 قراءات دورة/دقيقة (Hankyong) ← السرعة", warn:"⚠ إعادة القياس", ok:"✔ مطابق",
-      mWidth:"العرض B", mDepth:"العمق H", mHeight:"الارتفاع H'", mQ:"التدفق المقاس Q",
-      vel1:"القياس 1", vel2:"القياس 2", vel3:"القياس 3", avg:"المتوسط",
-      mannTitle:"📐 حساب مانينغ", aA:"المساحة A", aP:"المحيط المبلل P", aR:"نصف القطر R", aQm:"تدفق مانينغ Qm", aQ:"التدفق المقاس Q",
-      errLabel:"نسبة الخطأ", errWarn:"← يُنصح بإعادة القياس", errOk:"← ضمن الحدود المقبولة",
-      mapGoogle:"🗺 خرائط Google", mapKakao:"🗺 خريطة Kakao", headingLabel:"الاتجاه"
+      mapGoogle:"🗺 Google Maps", mapKakao:"🗺 Kakao Map", headingLabel:"Heading", photoTitle:"📷 Site photos ({n})"
     }
   };
   const t = k => T[lang][k];
 
   const DIRS = {
     ko: ["북","북북동","북동","동북동","동","동남동","남동","남남동","남","남남서","남서","서남서","서","서북서","북서","북북서"],
-    en: ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"],
-    ar: ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"]
+    en: ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"]
   };
   function devName(d) {
     if (!d) return "";
@@ -165,12 +160,11 @@
 
   function setLang(l) {
     lang = l;
-    ["ko","en","ar"].forEach(x => {
+    ["ko","en"].forEach(x => {
       const b = document.getElementById("lang" + x.charAt(0).toUpperCase() + x.slice(1));
       if (b) b.classList.toggle("active", x === l);
     });
     document.documentElement.lang = l;
-    document.documentElement.dir = (l === "ar") ? "rtl" : "ltr";
     document.querySelectorAll("[data-ko]").forEach(el => {
       el.textContent = el.getAttribute("data-" + l) || el.getAttribute("data-ko");
     });
@@ -233,6 +227,7 @@
       const res = await fetch(CSV_URL + "?t=" + Date.now());
       if (!res.ok) throw new Error("HTTP " + res.status);
       allRows = parseCSV(await res.text()).reverse();
+      await loadPhotos();
       lastUpdateTime = new Date(); setLastUpdateLabel();
       updateSummary(); renderCards();
     } catch(e) {
@@ -240,6 +235,25 @@
         `<div class="error-msg">${t("errLoad")}<br><small>${e.message}</small></div>`;
       lastUpdateTime = "fail"; setLastUpdateLabel();
     }
+  }
+
+  // photos.csv → ID별 사진 링크 묶음 (없으면 빈 맵)
+  async function loadPhotos() {
+    photoMap = {};
+    try {
+      const res = await fetch(PHOTOS_CSV_URL + "?t=" + Date.now());
+      if (!res.ok) return;
+      const text = (await res.text()).replace(/^\uFEFF/, "");
+      const lines = text.trim().split("\n").filter(l => l.trim());
+      // 컬럼: 촬영시각,농수로ID,위도,경도,사진링크
+      lines.slice(1).forEach(line => {
+        const c = line.split(",");
+        const id = (c[1] || "").trim();
+        const url = (c[4] || "").trim();
+        if (!id || !url) return;
+        (photoMap[id] = photoMap[id] || []).push(url);
+      });
+    } catch (e) { /* photos.csv 없거나 실패 → 사진 없이 진행 */ }
   }
 
   function updateSummary() {
@@ -287,6 +301,14 @@
           </div>
         </div>` : "";
     const googleUrl = `https://maps.google.com/?q=${r.lat},${r.lng}`;
+    const photos = photoMap[r.id] || [];
+    const photoBlock = photos.length ? `
+        <div class="photo-section">
+          <h4>${t("photoTitle").replace("{n}", photos.length)}</h4>
+          <div class="photo-gallery">
+            ${photos.map(u => `<a href="${u}" target="_blank" class="pg-item"><img src="${u}" loading="lazy" onerror="this.parentElement.style.display='none'"></a>`).join("")}
+          </div>
+        </div>` : "";
 
     return `
     <div class="data-card">
@@ -325,6 +347,7 @@
             ${t("errLabel")} ${m.errPct.toFixed(1)}% ${m.isWarn?t("errWarn"):t("errOk")}
           </div>
         </div>
+        ${photoBlock}
         ${r.photo?`<img class="photo-thumb" src="${r.photo}"
           onerror="this.style.display='none'" onload="this.style.display='block'"
           onclick="window.open('${r.photo}','_blank')">`:""}
