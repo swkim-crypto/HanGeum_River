@@ -124,7 +124,6 @@
   }
   const n_coeff = 0.025, S_slope = 0.001, ERR_THR = 10;
   let allRows = [];
-  let photoMap = {};   // 농수로ID → [사진링크, ...]
   const activeMaps = {};
   let lastUpdateTime = null;
 
@@ -238,7 +237,6 @@
     lastUpdateTime = null; setLastUpdateLabel();
     try {
       allRows = parseCSV(await fetchFresh("data.csv")).reverse();
-      await loadPhotos();
       lastUpdateTime = new Date(); setLastUpdateLabel();
       updateSummary(); renderCards();
     } catch(e) {
@@ -248,29 +246,6 @@
     }
   }
 
-  // 사진 갤러리: photos/ 폴더 목록에서 파일명으로 ID별 묶음 생성 (대장 csv 불필요)
-  // 파일명 형식: <시각숫자>_<농수로ID>.jpg  → 첫 '_' 뒤가 ID
-  async function loadPhotos() {
-    photoMap = {};
-    try {
-      const r = await fetch(`https://api.github.com/repos/${REPO}/contents/photos?ref=main&t=${Date.now()}`,
-                            { headers: { "Accept": "application/vnd.github+json" }, cache: "no-store" });
-      if (!r.ok) return;                       // 폴더 없음(빈 상태) 등 → 사진 없이 진행
-      const files = await r.json();
-      if (!Array.isArray(files)) return;
-      files.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-      files.forEach(f => {
-        const name = f.name || "";
-        if (!/\.jpe?g$/i.test(name)) return;
-        const base = name.replace(/\.jpe?g$/i, "");
-        const u = base.indexOf("_");
-        const id = u >= 0 ? base.slice(u + 1) : "";
-        if (!id) return;
-        const url = f.download_url || `https://raw.githubusercontent.com/${REPO}/main/photos/${name}`;
-        (photoMap[id] = photoMap[id] || []).push(url);
-      });
-    } catch (e) { /* 실패 → 사진 없이 진행 */ }
-  }
 
   function updateSummary() {
     const warn = allRows.filter(r => manning(r).isWarn).length;
@@ -317,7 +292,7 @@
           </div>
         </div>` : "";
     const googleUrl = `https://maps.google.com/?q=${r.lat},${r.lng}`;
-    const photos = photoMap[r.id] || [];
+    const photos = (r.photo || "").split(";").map(u => u.trim()).filter(Boolean);
     const photoBlock = photos.length ? `
         <div class="photo-section">
           <h4>${t("photoTitle").replace("{n}", photos.length)}</h4>
@@ -364,9 +339,6 @@
           </div>
         </div>
         ${photoBlock}
-        ${r.photo?`<img class="photo-thumb" src="${r.photo}"
-          onerror="this.style.display='none'" onload="this.style.display='block'"
-          onclick="window.open('${r.photo}','_blank')">`:""}
         ${r.lat&&r.lng?`
         <div class="map-buttons">
           <a class="map-btn btn-google" href="${googleUrl}" target="_blank">${t("mapGoogle")}</a>

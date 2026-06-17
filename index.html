@@ -111,13 +111,6 @@
     .thumb-row .thumb { position: relative; width: 62px; height: 62px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; }
     .thumb-row .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .thumb-row .thumb .del { position: absolute; top: 0; right: 0; background: rgba(0,0,0,0.55); color: #fff; border: none; width: 20px; height: 20px; font-size: 12px; line-height: 1; cursor: pointer; border-radius: 0 0 0 7px; }
-    .btn-photo-done { width: 100%; margin-top: 8px; padding: 11px; background: #059669; color: #fff; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 700; font-family: inherit; cursor: pointer; }
-    .btn-photo-done:active { background: #047857; }
-    .btn-photo-done:disabled { background: #94d3bf; }
-    .queue-status { font-size: 0.92rem; font-weight: 700; color: #1e3a8a; text-align: center; margin-bottom: 10px; }
-    .btn-batch-send { width: 100%; padding: 14px; background: #7c3aed; color: #fff; border: none; border-radius: 11px; font-size: 1rem; font-weight: 800; font-family: inherit; cursor: pointer; }
-    .btn-batch-send:disabled { background: #cbd5e1; cursor: default; }
-    #batchStatus { font-size: 0.8rem; text-align: center; margin-top: 8px; color: #64748b; }
   </style>
 </head>
 <body>
@@ -209,26 +202,18 @@
     </div>
     <input type="file" id="photo" accept="image/*" capture="environment" style="display:none">
     <div class="thumb-row" id="stagingThumbs"></div>
-    <button type="button" class="btn-photo-done" id="btnPhotoDone" onclick="finishLocationPhotos()" style="display:none" data-ko="📸 사진종료 (이 지점 저장)" data-en="📸 Finish photos (save site)">📸 사진종료 (이 지점 저장)</button>
   </div>
 
   <button type="button" class="btn-send-direct" id="btnSendDirect" onclick="directUpload()" data-ko="📤 서버전송" data-en="📤 Send to server">📤 서버전송</button>
-  <div class="send-hint" data-ko="측정값은 유속(또는 rpm)만 입력하면 바로 전송됩니다. 사진은 아래 [사진종료]로 모아 일괄 전송하세요." data-en="Measurements send instantly with just velocity (or RPM). Collect photos via [Finish photos] below and send them in a batch.">측정값은 유속(또는 rpm)만 입력하면 바로 전송됩니다. 사진은 아래 [사진종료]로 모아 일괄 전송하세요.</div>
+  <div class="send-hint" data-ko="유속(또는 rpm)만 있으면 전송됩니다. 위에서 추가한 사진은 [서버전송] 시 측정값과 함께 올라갑니다." data-en="Measurements send instantly with just velocity (or RPM). Collect photos via [Finish photos] below and send them in a batch.">유속(또는 rpm)만 있으면 전송됩니다. 위에서 추가한 사진은 [서버전송] 시 측정값과 함께 올라갑니다.</div>
 
   <div id="statusMsg"></div>
-</div>
-
-<!-- 사진 큐 + 일괄 전송 -->
-<div class="card">
-  <div class="queue-status" id="queueStatus"></div>
-  <button type="button" class="btn-batch-send" id="btnBatchSend" onclick="batchSendPhotos()" disabled data-ko="📤 사진 일괄 전송" data-en="📤 Send all photos">📤 사진 일괄 전송</button>
-  <div id="batchStatus"></div>
 </div>
 
 <div class="card" style="font-size:0.84rem; color:#64748b; line-height:1.8;">
   <strong style="color:#1e3a8a;" data-ko="💡 사용 안내" data-en="💡 How to use">💡 사용 안내</strong><br>
   <span data-ko="① ID·단면 입력 → ② 장비 선택(삼안=유속 / 한경대=rpm) → ③ 3회 측정 → ④ 메모 → ⑤ 서버전송" data-en="① ID &amp; section → ② Device (SAMAN=velocity / Hankyong=RPM) → ③ Measure ×3 → ④ Memo → ⑤ Send">① ID·단면 입력 → ② 장비 선택(삼안=유속 / 한경대=rpm) → ③ 3회 측정 → ④ 메모 → ⑤ 서버전송</span><br>
-  <span data-ko="📷 사진은 지점마다 여러 장 찍고 [사진종료] → 신호 좋을 때 [사진 일괄 전송]" data-en="📷 Shoot multiple photos per site, tap [Finish photos] → then [Send all photos] when online">📷 사진은 지점마다 여러 장 찍고 [사진종료] → 신호 좋을 때 [사진 일괄 전송]</span>
+  <span data-ko="📷 사진은 [탭하여 사진 추가]로 여러 장 담은 뒤 [서버전송]으로 측정값과 함께 전송" data-en="📷 Shoot multiple photos per site, tap [Finish photos] → then [Send all photos] when online">📷 사진은 [탭하여 사진 추가]로 여러 장 담은 뒤 [서버전송]으로 측정값과 함께 전송</span>
 </div>
 
 <!-- ── 확인 팝업 ──────────────────────────────────── -->
@@ -268,7 +253,6 @@
 
 <script>
   const SERVER_URL = "https://hangeum-river.onrender.com/upload";
-  const PHOTO_URL  = "https://hangeum-river.onrender.com/upload_photo";
   const n = 0.025, S = 0.001;
 
   let currentLat     = null;
@@ -322,7 +306,6 @@
     document.querySelectorAll("[data-ko-ph]").forEach(el => {
       el.placeholder = el.getAttribute("data-" + l + "-ph") || el.getAttribute("data-ko-ph");
     });
-    updatePhotoQueueUI();
   }
 
   /* ── 나침반 시작 ── */
@@ -438,35 +421,7 @@
   }
 
   /* ── 다중 사진: 스테이징 + IndexedDB 큐 + 일괄 전송 ── */
-  let staging = [];            // 현재 지점에 찍은 사진 [{blob,url}]
-  let photoDB = null;
-
-  function openPhotoDB() {
-    return new Promise((resolve, reject) => {
-      const req = indexedDB.open("hangeumPhotos", 1);
-      req.onupgradeneeded = e => e.target.result.createObjectStore("queue", { keyPath: "key", autoIncrement: true });
-      req.onsuccess = e => { photoDB = e.target.result; resolve(photoDB); };
-      req.onerror  = e => reject(e);
-    });
-  }
-  function dbAll() {
-    return new Promise((res, rej) => {
-      const r = photoDB.transaction("queue", "readonly").objectStore("queue").getAll();
-      r.onsuccess = () => res(r.result); r.onerror = e => rej(e);
-    });
-  }
-  function dbAdd(rec) {
-    return new Promise((res, rej) => {
-      const tx = photoDB.transaction("queue", "readwrite"); tx.objectStore("queue").add(rec);
-      tx.oncomplete = () => res(); tx.onerror = e => rej(e);
-    });
-  }
-  function dbDelete(key) {
-    return new Promise((res, rej) => {
-      const tx = photoDB.transaction("queue", "readwrite"); tx.objectStore("queue").delete(key);
-      tx.oncomplete = () => res(); tx.onerror = e => rej(e);
-    });
-  }
+  let staging = [];            // 현재 측정에 첨부할 사진 [{blob,url}]
 
   // 사진 추가 (탭마다 1장)
   document.getElementById("photo").addEventListener("change", e => {
@@ -481,80 +436,9 @@
     const wrap = document.getElementById("stagingThumbs");
     wrap.innerHTML = staging.map((s, i) =>
       `<div class="thumb"><img src="${s.url}"><button type="button" class="del" onclick="removeStaging(${i})">✕</button></div>`).join("");
-    document.getElementById("btnPhotoDone").style.display = staging.length ? "block" : "none";
     document.getElementById("photoArea").classList.toggle("has-photo", staging.length > 0);
   }
   function removeStaging(i) { URL.revokeObjectURL(staging[i].url); staging.splice(i, 1); renderStaging(); }
-
-  // 사진종료: 이 지점 사진들을 ID·좌표와 함께 로컬 저장
-  async function finishLocationPhotos() {
-    if (!staging.length) return;
-    const id = document.getElementById("channelId").value.trim();
-    if (!id) { alert(t("photoNeedId")); return; }
-    const btn = document.getElementById("btnPhotoDone");
-    btn.disabled = true; btn.textContent = t("photoSaving");
-    if (currentLat === null || currentLat === "0") { startCompass(); await acquireGPS(); }
-    const lat = currentLat || "0", lng = currentLng || "0";
-    const ts = new Date().toISOString().slice(0,19).replace("T"," ");
-    try {
-      for (const s of staging) await dbAdd({ id, lat, lng, ts, blob: s.blob });
-      staging.forEach(s => URL.revokeObjectURL(s.url));
-      staging = []; renderStaging();
-      currentLat = null; currentLng = null;   // 다음 지점 위해 초기화
-      await updatePhotoQueueUI();
-      alert(t("photoSaved"));
-    } catch (err) {
-      alert(t("photoSaveFail"));
-    }
-    btn.disabled = false; btn.textContent = t("photoDone");
-  }
-
-  async function updatePhotoQueueUI() {
-    const status = document.getElementById("queueStatus");
-    const btn    = document.getElementById("btnBatchSend");
-    if (!status || !btn) return;
-    if (!photoDB) { status.textContent = t("queueEmpty"); btn.disabled = true; return; }
-    const all = await dbAll();
-    const sites = new Set(all.map(r => r.id)).size;
-    if (!all.length) { status.textContent = t("queueEmpty"); btn.disabled = true; }
-    else {
-      status.textContent = t("queuePending").replace("{n}", all.length).replace("{m}", sites);
-      btn.disabled = false;
-    }
-  }
-
-  // 일괄 전송: 큐의 사진을 하나씩 서버로 (성공한 것만 큐에서 삭제)
-  async function batchSendPhotos() {
-    if (!photoDB) return;
-    const all = await dbAll();
-    if (!all.length) return;
-    const btn = document.getElementById("btnBatchSend");
-    const bs  = document.getElementById("batchStatus");
-    btn.disabled = true;
-    let ok = 0, fail = 0;
-    for (let i = 0; i < all.length; i++) {
-      const rec = all[i];
-      bs.textContent = t("batchProgress").replace("{k}", i+1).replace("{n}", all.length);
-      const ctrl  = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 60000);   // 장당 60초 제한 (멈춤 방지)
-      try {
-        const fd = new FormData();
-        fd.append("channel_id", rec.id);
-        fd.append("latitude",   rec.lat);
-        fd.append("longitude",  rec.lng);
-        fd.append("timestamp",  rec.ts);
-        fd.append("image",      rec.blob, "photo.jpg");
-        const res = await fetch(PHOTO_URL, { method: "POST", body: fd, signal: ctrl.signal });
-        if (res.ok) { await dbDelete(rec.key); ok++; } else fail++;
-      } catch (e) { fail++; }
-      finally { clearTimeout(timer); }
-      await new Promise(r => setTimeout(r, 300));   // 서버/깃허브 과부하 방지
-    }
-    await updatePhotoQueueUI();
-    bs.textContent = (fail ? t("batchPartial") : t("batchDone"))
-      .replace("{ok}", ok).replace("{fail}", fail);
-    btn.disabled = false;
-  }
 
   function openPopup() {
     // 팝업 초기 상태
@@ -678,6 +562,7 @@
     fd.append("device", deviceName);
     fd.append("rpm1", rpm1); fd.append("rpm2", rpm2); fd.append("rpm3", rpm3);
     fd.append("n1", n1);     fd.append("n2", n2);     fd.append("n3", n3);
+    staging.forEach((sp, i) => fd.append("images", sp.blob, `photo${i+1}.jpg`));
     return { ok:true, fd };
   }
 
@@ -752,13 +637,9 @@
     document.getElementById("manningBox").style.display = "none";
     currentLat = null; currentLng = null; currentHeading = null;
     setDevice("saman");
+    staging.forEach(sp => URL.revokeObjectURL(sp.url)); staging = []; renderStaging();
   }
 
-  // 사진 큐 초기화 (새로고침 후에도 대기 사진 유지)
-  openPhotoDB().then(updatePhotoQueueUI).catch(() => {
-    const s = document.getElementById("queueStatus");
-    if (s) s.textContent = t("queueEmpty");
-  });
 </script>
 </body>
 </html>

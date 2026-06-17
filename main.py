@@ -3,6 +3,7 @@ import base64
 import time
 import unicodedata
 from datetime import datetime
+from typing import List
 from fastapi import FastAPI, Form, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from github import Github
@@ -63,7 +64,7 @@ async def upload_data(
     memo:       str        = Form(""),
     latitude:   str        = Form("0"),
     longitude:  str        = Form("0"),
-    image:      UploadFile = File(None),
+    images:     List[UploadFile] = File(default=[]),
     device:     str        = Form(""),
     rpm1:       str        = Form(""),
     rpm2:       str        = Form(""),
@@ -78,14 +79,17 @@ async def upload_data(
         now      = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         date_str = datetime.now().strftime("%Y%m%d%H%M%S")
 
-        # 사진 업로드 (있을 때만)
-        image_url = ""
-        if image is not None and image.filename:
-            safe_id        = "".join(c for c in channel_id if c.isalnum() or c in "-_")
-            image_filename = f"photos/{date_str}_{safe_id}.jpg"
-            file_content   = await image.read()
+        # 사진 업로드 (여러 장 가능). URL들을 ';'로 묶어 data.csv 사진링크에 기록.
+        safe_id = "".join(c for c in channel_id if c.isalnum() or c in "-_")
+        urls = []
+        for idx, img in enumerate(images or []):
+            if not img or not getattr(img, "filename", ""):
+                continue
+            image_filename = f"photos/{date_str}{idx:02d}_{safe_id}.jpg"
+            file_content   = await img.read()
             repo.create_file(path=image_filename, message=f"Upload photo: {safe_id} [skip render]", content=file_content, branch="main")
-            image_url = f"https://raw.githubusercontent.com/{REPO_NAME}/main/{image_filename}"
+            urls.append(f"https://raw.githubusercontent.com/{REPO_NAME}/main/{image_filename}")
+        image_url = ";".join(urls)
 
         # CSV 읽기 (헤더 손상 시 자가복구)
         existing_str, sha = read_csv_clean(repo, CSV_PATH, CSV_HEADER)
@@ -115,32 +119,3 @@ async def upload_data(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"서버 에러: {str(e)}")
-
-
-@app.post("/upload_photo")
-async def upload_photo(
-    channel_id: str        = Form(""),
-    latitude:   str        = Form("0"),
-    longitude:  str        = Form("0"),
-    timestamp:  str        = Form(""),
-    image:      UploadFile = File(...)
-):
-    """현장 사진 일괄 전송용. 사진을 repo의 photos/ 폴더에만 저장한다.
-    별도 대장(photos.csv)은 만들지 않는다. 파일명에 ID가 들어 있어,
-    조회 화면이 photos/ 폴더 목록만으로 ID별 갤러리를 구성한다."""
-    try:
-        g    = Github(GITHUB_TOKEN)
-        repo = g.get_repo(REPO_NAME)
-        date_str = datetime.now().strftime("%Y%m%d%H%M%S%f")
-
-        # 사진 저장 (파일명에 ID 포함: <시각>_<농수로ID>.jpg)
-        safe_id        = "".join(c for c in normalize(channel_id) if c.isalnum() or c in "-_")
-        image_filename = f"photos/{date_str}_{safe_id}.jpg"
-        file_content   = await image.read()
-        repo.create_file(path=image_filename, message=f"Photo: {safe_id} [skip render]", content=file_content, branch="main")
-        image_url = f"https://raw.githubusercontent.com/{REPO_NAME}/main/{image_filename}"
-
-        return {"status": "success", "url": image_url}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"사진 전송 에러: {str(e)}")
