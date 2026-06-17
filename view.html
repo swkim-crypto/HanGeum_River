@@ -108,21 +108,11 @@
 
 <script>
   const CSV_URL = "https://raw.githubusercontent.com/swkim-crypto/HanGeum_River/main/data.csv";
-  const PHOTOS_CSV_URL = "https://raw.githubusercontent.com/swkim-crypto/HanGeum_River/main/photos.csv";
   const REPO = "swkim-crypto/HanGeum_River";
-  const API_BASE = "https://hangeum-river.onrender.com";
-  const SERVER_ENDPOINT = { "data.csv": "/data", "photos.csv": "/photos" };
 
-  // 항상 최신 내용 읽기: Render 서버(인증·무캐시·배포무관) 우선,
-  // 실패 시 GitHub API, 그래도 실패 시 raw 폴백
+  // 조회는 서버를 거치지 않고 GitHub을 직접 읽는다(콜드스타트 없음, 즉시 반영).
+  // 1순위 Contents API(커밋 즉시 반영), 실패 시 raw 폴백(~5분 캐시 가능).
   async function fetchFresh(file) {
-    const ep = SERVER_ENDPOINT[file];
-    if (ep) {
-      try {
-        const rs = await fetch(`${API_BASE}${ep}?t=${Date.now()}`, { cache: "no-store" });
-        if (rs.ok) return await rs.text();
-      } catch (e) { /* 서버 실패 → GitHub 폴백 */ }
-    }
     try {
       const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${file}?ref=main&t=${Date.now()}`,
                             { headers: { "Accept": "application/vnd.github.raw" }, cache: "no-store" });
@@ -258,21 +248,28 @@
     }
   }
 
-  // photos.csv → ID별 사진 링크 묶음 (없으면 빈 맵)
+  // 사진 갤러리: photos/ 폴더 목록에서 파일명으로 ID별 묶음 생성 (대장 csv 불필요)
+  // 파일명 형식: <시각숫자>_<농수로ID>.jpg  → 첫 '_' 뒤가 ID
   async function loadPhotos() {
     photoMap = {};
     try {
-      const text = (await fetchFresh("photos.csv")).replace(/^\uFEFF/, "");
-      const lines = text.trim().split("\n").filter(l => l.trim());
-      // 컬럼: 촬영시각,농수로ID,위도,경도,사진링크
-      lines.slice(1).forEach(line => {
-        const c = line.split(",");
-        const id = (c[1] || "").trim();
-        const url = (c[4] || "").trim();
-        if (!id || !url) return;
+      const r = await fetch(`https://api.github.com/repos/${REPO}/contents/photos?ref=main&t=${Date.now()}`,
+                            { headers: { "Accept": "application/vnd.github+json" }, cache: "no-store" });
+      if (!r.ok) return;                       // 폴더 없음(빈 상태) 등 → 사진 없이 진행
+      const files = await r.json();
+      if (!Array.isArray(files)) return;
+      files.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+      files.forEach(f => {
+        const name = f.name || "";
+        if (!/\.jpe?g$/i.test(name)) return;
+        const base = name.replace(/\.jpe?g$/i, "");
+        const u = base.indexOf("_");
+        const id = u >= 0 ? base.slice(u + 1) : "";
+        if (!id) return;
+        const url = f.download_url || `https://raw.githubusercontent.com/${REPO}/main/photos/${name}`;
         (photoMap[id] = photoMap[id] || []).push(url);
       });
-    } catch (e) { /* photos.csv 없거나 실패 → 사진 없이 진행 */ }
+    } catch (e) { /* 실패 → 사진 없이 진행 */ }
   }
 
   function updateSummary() {

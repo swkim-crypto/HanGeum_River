@@ -5,7 +5,6 @@ import unicodedata
 from datetime import datetime
 from fastapi import FastAPI, Form, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import PlainTextResponse
 from github import Github
 
 app = FastAPI()
@@ -21,8 +20,6 @@ CSV_HEADER = "조사일자,농수로ID,수로폭(m),수심(m),높이(m),유속1(
 def normalize(text: str) -> str:
     return unicodedata.normalize("NFC", text)
 
-PHOTOS_PATH   = "photos.csv"
-PHOTOS_HEADER = "촬영시각,농수로ID,위도,경도,사진링크\n"
 
 def read_csv_clean(repo, path, header):
     """기존 CSV를 읽되, 내용이 인코딩 손상됐거나 헤더가 비표준/빈 줄이면
@@ -47,24 +44,10 @@ def read_csv_clean(repo, path, header):
 def root():
     return {"status": "ok", "message": "HanGeum River API is running"}
 
-# ── 조회용: 서버가 인증 호출로 GitHub에서 직접 읽어 내려줌 ──────────────
-# (Contents API 60회/시간 한도 회피 + raw CDN 5분 캐시 회피 + Pages 배포와 무관)
-def _read_repo_file(path: str, header: str) -> str:
-    try:
-        g        = Github(GITHUB_TOKEN)
-        repo     = g.get_repo(REPO_NAME)
-        contents = repo.get_contents(path, ref="main")
-        return normalize(base64.b64decode(contents.content).decode("utf-8-sig", errors="ignore"))
-    except Exception:
-        return header
-
-@app.get("/data", response_class=PlainTextResponse)
-def get_data():
-    return _read_repo_file(CSV_PATH, CSV_HEADER)
-
-@app.get("/photos", response_class=PlainTextResponse)
-def get_photos():
-    return _read_repo_file(PHOTOS_PATH, PHOTOS_HEADER)
+# 조회(읽기)는 더 이상 서버를 거치지 않는다.
+# view.html이 GitHub Contents API로 data.csv를 직접 읽고, 사진 갤러리는
+# photos/ 폴더 목록에서 파일명(<시각>_<농수로ID>.jpg)으로 만든다.
+# → 서버 콜드스타트와 무관하게 항상 즉시 반영, 구조도 단순화.
 
 @app.post("/upload")
 async def upload_data(
@@ -142,37 +125,20 @@ async def upload_photo(
     timestamp:  str        = Form(""),
     image:      UploadFile = File(...)
 ):
-    """현장 사진 일괄 전송용. 사진은 repo에 저장하고 photos.csv에 ID로 기록."""
+    """현장 사진 일괄 전송용. 사진을 repo의 photos/ 폴더에만 저장한다.
+    별도 대장(photos.csv)은 만들지 않는다. 파일명에 ID가 들어 있어,
+    조회 화면이 photos/ 폴더 목록만으로 ID별 갤러리를 구성한다."""
     try:
         g    = Github(GITHUB_TOKEN)
         repo = g.get_repo(REPO_NAME)
-        now      = normalize(timestamp) or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         date_str = datetime.now().strftime("%Y%m%d%H%M%S%f")
 
-        # 사진 저장 (파일명에 ID 포함)
+        # 사진 저장 (파일명에 ID 포함: <시각>_<농수로ID>.jpg)
         safe_id        = "".join(c for c in normalize(channel_id) if c.isalnum() or c in "-_")
         image_filename = f"photos/{date_str}_{safe_id}.jpg"
         file_content   = await image.read()
         repo.create_file(path=image_filename, message=f"Photo: {safe_id} [skip render]", content=file_content, branch="main")
         image_url = f"https://raw.githubusercontent.com/{REPO_NAME}/main/{image_filename}"
-
-        # photos.csv 누적 (동시/지연 충돌 시 sha 재조회 후 재시도)
-        new_row = f"{now},{normalize(channel_id)},{latitude},{longitude},{image_url}\n"
-        last_err = None
-        for attempt in range(5):
-            try:
-                existing_str, sha = read_csv_clean(repo, PHOTOS_PATH, PHOTOS_HEADER)
-                if sha:
-                    repo.update_file(PHOTOS_PATH, "Add photo row [skip render]", existing_str + new_row, sha, branch="main")
-                else:
-                    repo.create_file(PHOTOS_PATH, "Create photos file [skip render]", existing_str + new_row, branch="main")
-                last_err = None
-                break
-            except Exception as ex:
-                last_err = ex
-                time.sleep(0.8)
-        if last_err is not None:
-            raise last_err
 
         return {"status": "success", "url": image_url}
 
