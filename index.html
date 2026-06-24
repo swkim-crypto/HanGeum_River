@@ -111,11 +111,22 @@
     .thumb-row .thumb { position: relative; width: 62px; height: 62px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; }
     .thumb-row .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .thumb-row .thumb .del { position: absolute; top: 0; right: 0; background: rgba(0,0,0,0.55); color: #fff; border: none; width: 20px; height: 20px; font-size: 12px; line-height: 1; cursor: pointer; border-radius: 0 0 0 7px; }
+
+    /* 모드 전환 (유속측정 / 라오스 현장기록) */
+    .mode-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .mode-btn { padding: 13px 8px; border: 1.5px solid #cbd5e1; border-radius: 11px; background: #fff; font-size: 0.95rem; font-weight: 800; color: #64748b; cursor: pointer; font-family: inherit; transition: all .15s; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+    .mode-btn.active { background: #047857; color: #fff; border-color: #047857; }
+    #modeMeasure.active { background: #1d4ed8; border-color: #1d4ed8; }
   </style>
 </head>
 <body>
 
-<div class="card">
+<div class="mode-bar">
+  <button type="button" class="mode-btn active" id="modeMeasure" onclick="setMode('measure')" data-ko="🌊 유속측정" data-en="🌊 Velocity">🌊 유속측정</button>
+  <button type="button" class="mode-btn" id="modeLaos" onclick="setMode('laos')" data-ko="🌏 라오스 현장기록" data-en="🌏 Laos Field Log">🌏 라오스 현장기록</button>
+</div>
+
+<div class="card mode-measure">
   <div class="title-row">
     <h2 data-ko="유속데이터 실측" data-en="Flow Velocity Measurement">유속데이터 실측</h2>
     <div class="lang-toggle">
@@ -210,10 +221,42 @@
   <div id="statusMsg"></div>
 </div>
 
-<div class="card" style="font-size:0.84rem; color:#64748b; line-height:1.8;">
+<div class="card mode-measure" style="font-size:0.84rem; color:#64748b; line-height:1.8;">
   <strong style="color:#1e3a8a;" data-ko="💡 사용 안내" data-en="💡 How to use">💡 사용 안내</strong><br>
   <span data-ko="① ID·단면 입력 → ② 장비 선택(삼안=유속 / 한경대=rpm) → ③ 3회 측정 → ④ 메모 → ⑤ 서버전송" data-en="① ID &amp; section → ② Device (SAMAN=velocity / Hankyong=RPM) → ③ Measure ×3 → ④ Memo → ⑤ Send">① ID·단면 입력 → ② 장비 선택(삼안=유속 / 한경대=rpm) → ③ 3회 측정 → ④ 메모 → ⑤ 서버전송</span><br>
   <span data-ko="📷 사진은 [탭하여 사진 추가]로 여러 장 담은 뒤 [서버전송]으로 측정값과 함께 전송" data-en="📷 Shoot multiple photos per site, tap [Finish photos] → then [Send all photos] when online">📷 사진은 [탭하여 사진 추가]로 여러 장 담은 뒤 [서버전송]으로 측정값과 함께 전송</span>
+</div>
+
+<!-- ── 라오스 현장기록 모드 ──────────────────────────────────── -->
+<div class="card mode-laos" style="display:none;">
+  <div class="title-row">
+    <h2 data-ko="🌏 라오스 현장기록" data-en="🌏 Laos Field Log">🌏 라오스 현장기록</h2>
+  </div>
+
+  <div class="form-group">
+    <label data-ko="지점명 (선택)" data-en="Spot name (optional)">지점명 (선택)</label>
+    <input type="text" id="laosTitle" placeholder="예: 취수구 후보지 A" data-ko-ph="예: 취수구 후보지 A" data-en-ph="e.g. Intake candidate A">
+  </div>
+
+  <div class="form-group">
+    <label data-ko="메모" data-en="Memo">메모</label>
+    <textarea id="laosMemo" placeholder="지형/현황/특이사항 메모…" data-ko-ph="지형/현황/특이사항 메모…" data-en-ph="Terrain / condition / notes…"></textarea>
+  </div>
+
+  <div class="form-group">
+    <label data-ko="현장 사진 (여러 장 가능, 없어도 됨)" data-en="Site photos (multiple, optional)">현장 사진 (여러 장 가능, 없어도 됨)</label>
+    <div class="photo-area" id="laosPhotoArea" onclick="document.getElementById('laosPhoto').click()">
+      <div class="photo-icon">📷</div>
+      <div class="photo-label-text" data-ko="탭하여 사진 추가" data-en="Tap to add photo">탭하여 사진 추가</div>
+    </div>
+    <input type="file" id="laosPhoto" accept="image/*" capture="environment" style="display:none">
+    <div class="thumb-row" id="laosThumbs"></div>
+  </div>
+
+  <button type="button" class="btn-send-direct" style="background:#047857;" onclick="laosUpload()" data-ko="📍 위치 기록 + 전송" data-en="📍 Log location + Send">📍 위치 기록 + 전송</button>
+  <div class="send-hint" data-ko="버튼을 누르면 현재 GPS 위치를 잡아 사진·메모와 함께 전송합니다. 사진이 없어도 위치만 기록됩니다." data-en="Captures current GPS on tap and sends with photos/memo. Works even with no photo — location is still logged.">버튼을 누르면 현재 GPS 위치를 잡아 사진·메모와 함께 전송합니다. 사진이 없어도 위치만 기록됩니다.</div>
+
+  <div id="laosStatus"></div>
 </div>
 
 <!-- ── 확인 팝업 ──────────────────────────────────── -->
@@ -623,8 +666,8 @@
     await sendToServer(r2.fd);
   }
 
-  function showStatus(type, html) {
-    const el = document.getElementById("statusMsg");
+  function showStatus(type, html, elId="statusMsg") {
+    const el = document.getElementById(elId);
     el.className = "msg-"+type; el.innerHTML = html; el.style.display = "block";
     if (type !== "loading") setTimeout(() => { el.style.display = "none"; }, 6000);
   }
@@ -638,6 +681,73 @@
     currentLat = null; currentLng = null; currentHeading = null;
     setDevice("saman");
     staging.forEach(sp => URL.revokeObjectURL(sp.url)); staging = []; renderStaging();
+  }
+
+  /* ═══ 라오스 현장기록 모드 ═══ */
+  const LAOS_URL = "https://hangeum-river.onrender.com/upload_laos";
+  let laosStaging = [];   // 라오스용 사진 [{blob,url}] — 유속 staging과 분리
+
+  function setMode(m) {
+    const laos = (m === "laos");
+    document.getElementById("modeMeasure").classList.toggle("active", !laos);
+    document.getElementById("modeLaos").classList.toggle("active", laos);
+    document.querySelectorAll(".mode-measure").forEach(el => el.style.display = laos ? "none" : "");
+    document.querySelectorAll(".mode-laos").forEach(el => el.style.display = laos ? "" : "none");
+    window.scrollTo(0, 0);
+  }
+
+  document.getElementById("laosPhoto").addEventListener("change", e => {
+    const file = e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    laosStaging.push({ blob: file, url: URL.createObjectURL(file) });
+    renderLaosStaging();
+  });
+
+  function renderLaosStaging() {
+    const wrap = document.getElementById("laosThumbs");
+    wrap.innerHTML = laosStaging.map((s, i) =>
+      `<div class="thumb"><img src="${s.url}"><button type="button" class="del" onclick="removeLaosStaging(${i})">✕</button></div>`).join("");
+    document.getElementById("laosPhotoArea").classList.toggle("has-photo", laosStaging.length > 0);
+  }
+  function removeLaosStaging(i) { URL.revokeObjectURL(laosStaging[i].url); laosStaging.splice(i, 1); renderLaosStaging(); }
+
+  async function laosUpload() {
+    // 버튼 탭 = 사용자 제스처 → iOS GPS/나침반 권한 OK. 위치를 지금 취득.
+    showStatus("loading", '<span class="spinner"></span>' + t("locating"), "laosStatus");
+    startCompass();
+    currentLat = null; currentLng = null;
+    await acquireGPS();   // 실패해도 진행 (위치 0,0 으로 전송되며, 메모는 남음)
+
+    const fd = new FormData();
+    fd.append("title",     document.getElementById("laosTitle").value.trim());
+    fd.append("memo",      document.getElementById("laosMemo").value.trim());
+    fd.append("latitude",  currentLat || "0");
+    fd.append("longitude", currentLng || "0");
+    fd.append("heading",   currentHeading !== null ? currentHeading.toString() : "0");
+    laosStaging.forEach((sp, i) => fd.append("images", sp.blob, `laos${i+1}.jpg`));
+
+    showStatus("loading", '<span class="spinner"></span>' + t("sending"), "laosStatus");
+    try {
+      const res  = await fetch(LAOS_URL, { method:"POST", body:fd });
+      const data = await res.json();
+      if (res.ok) {
+        const where = (currentLat && currentLat !== "0") ? ` (${currentLat}, ${currentLng})` : "";
+        showStatus("ok", t("sentOk") + where, "laosStatus");
+        resetLaos();
+      } else {
+        showStatus("err", t("serverErr") + (data.detail || t("unknownErr")), "laosStatus");
+      }
+    } catch(err) {
+      showStatus("err", t("netErr"), "laosStatus");
+    }
+  }
+
+  function resetLaos() {
+    document.getElementById("laosTitle").value = "";
+    document.getElementById("laosMemo").value  = "";
+    currentLat = null; currentLng = null; currentHeading = null;
+    laosStaging.forEach(sp => URL.revokeObjectURL(sp.url)); laosStaging = []; renderLaosStaging();
   }
 
 </script>

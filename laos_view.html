@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>라오스 현장기록 조회</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 12px; background: #f0f4f8; color: #2d3748; font-size: 15px; }
+    .header { background: #047857; color: #fff; border-radius: 14px; padding: 16px 18px; margin-bottom: 12px; }
+    .header h1 { margin: 0 0 4px; font-size: 1.1rem; }
+    .header-meta { font-size: 0.8rem; opacity: 0.85; }
+    .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .refresh-btn { background: #10b981; color: #fff; border: none; padding: 7px 14px; border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+    .lang-toggle { display: inline-flex; border: 1px solid rgba(255,255,255,0.5); border-radius: 8px; overflow: hidden; }
+    .lang-btn { padding: 5px 11px; background: transparent; border: none; font-size: 0.78rem; font-weight: 700; color: #d1fae5; cursor: pointer; font-family: inherit; }
+    .lang-btn.active { background: #fff; color: #047857; }
+
+    .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+    .stat-card { background: #fff; border-radius: 12px; padding: 12px 10px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.07); }
+    .stat-card .num { font-size: 1.5rem; font-weight: 800; color: #047857; }
+    .stat-card .lbl { font-size: 0.72rem; color: #64748b; margin-top: 2px; }
+
+    #overviewWrap { background: #fff; border-radius: 12px; padding: 10px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.07); }
+    #overviewMap { width: 100%; height: 300px; border-radius: 9px; }
+    .map-note { font-size: 0.74rem; color: #94a3b8; margin-top: 6px; text-align: center; }
+
+    .filter-bar { background: #fff; border-radius: 12px; padding: 10px 12px; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.07); }
+    .filter-bar input { width: 100%; padding: 8px 10px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; background: #f8fafc; }
+
+    .data-card { background: #fff; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.07); overflow: hidden; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; padding: 11px 14px; border-bottom: 1px solid #e2e8f0; cursor: pointer; gap: 8px; }
+    .card-header .sp-name { font-weight: 800; font-size: 1rem; color: #047857; word-break: break-all; }
+    .card-header .sp-time { font-size: 0.75rem; color: #94a3b8; }
+    .badge { font-size: 0.72rem; font-weight: 700; padding: 3px 9px; border-radius: 20px; flex-shrink: 0; }
+    .badge-photo { background: #dbeafe; color: #1e3a8a; }
+    .badge-nophoto { background: #f1f5f9; color: #64748b; }
+    .card-body { padding: 12px 14px; display: none; }
+    .card-body.open { display: block; }
+    .memo-box { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 8px 12px; font-size: 0.9rem; color: #78350f; margin-bottom: 10px; white-space: pre-wrap; }
+    .coord-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px 12px; margin-bottom: 10px; font-size: 0.82rem; background: #f8fafc; border-radius: 8px; padding: 8px 10px; text-align: center; }
+    .coord-row .cl { color: #64748b; font-size: 0.72rem; }
+    .coord-row .cv { font-weight: 700; color: #1e293b; font-family: monospace; }
+    .photo-section { margin-bottom: 10px; }
+    .photo-section h4 { margin: 0 0 8px; font-size: 0.82rem; color: #047857; }
+    .photo-gallery { display: flex; flex-wrap: wrap; gap: 6px; }
+    .photo-gallery .pg-item { width: 78px; height: 78px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; display: block; }
+    .photo-gallery .pg-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .btn-google { display: block; padding: 11px; border-radius: 9px; text-align: center; font-weight: 700; font-size: 0.9rem; text-decoration: none; background: #4285f4; color: #fff; }
+
+    .loading { text-align: center; padding: 40px 20px; color: #64748b; }
+    .spinner { width: 32px; height: 32px; border: 3px solid #e2e8f0; border-top-color: #10b981; border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto 12px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-msg { background: #fee2e2; color: #7f1d1d; border-radius: 10px; padding: 16px; text-align: center; margin: 12px 0; }
+    .empty-msg { text-align: center; padding: 30px; color: #94a3b8; }
+    .leaflet-popup-content { font-size: 0.85rem; line-height: 1.5; }
+    .leaflet-popup-content img { width: 100%; border-radius: 6px; margin: 6px 0; display: block; }
+    .leaflet-popup-content a { color: #1d4ed8; font-weight: 700; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="lang-toggle">
+      <button type="button" class="lang-btn active" id="langKo" onclick="setLang('ko')">한글</button>
+      <button type="button" class="lang-btn" id="langEn" onclick="setLang('en')">EN</button>
+    </div>
+    <button class="refresh-btn" onclick="loadData()" data-ko="🔄 새로고침" data-en="🔄 Refresh">🔄 새로고침</button>
+  </div>
+  <h1 data-ko="🌏 라오스 현장기록 조회" data-en="🌏 Laos Field Log">🌏 라오스 현장기록 조회</h1>
+  <div class="header-meta" id="lastUpdate" data-ko="불러오는 중…" data-en="Loading…">불러오는 중…</div>
+</div>
+
+<div class="summary-grid">
+  <div class="stat-card"><div class="num" id="statTotal">-</div><div class="lbl" data-ko="전체 지점" data-en="Total spots">전체 지점</div></div>
+  <div class="stat-card"><div class="num" id="statPhoto">-</div><div class="lbl" data-ko="사진 있는 지점" data-en="With photos">사진 있는 지점</div></div>
+</div>
+
+<div id="overviewWrap" style="display:none;">
+  <div id="overviewMap"></div>
+  <div class="map-note" data-ko="지도 © OpenStreetMap · 마커를 누르면 구글맵 길찾기로 연결됩니다" data-en="Map © OpenStreetMap · tap a marker to open Google Maps directions">지도 © OpenStreetMap · 마커를 누르면 구글맵 길찾기로 연결됩니다</div>
+</div>
+
+<div class="filter-bar">
+  <input type="text" id="filterText" placeholder="🔍 지점명·메모 검색…" data-ko-ph="🔍 지점명·메모 검색…" data-en-ph="🔍 Search name / memo…" oninput="renderCards()">
+</div>
+
+<div id="dataContainer">
+  <div class="loading"><div class="spinner"></div><span data-ko="데이터 불러오는 중…" data-en="Loading data…">데이터 불러오는 중…</span></div>
+</div>
+
+<script>
+  const REPO = "swkim-crypto/HanGeum_River";
+  const LAOS_FILE = "laos.csv";
+  let allRows = [];
+  let overviewMap = null;
+
+  /* ── 다국어 ── */
+  let lang = "ko";
+  const T = {
+    ko: { updated:"업데이트: ", loadFail:"불러오기 실패", errLoad:"❌ 데이터를 불러올 수 없습니다.",
+          empty:"기록된 라오스 현장 데이터가 없습니다.", noName:"(이름 없음)",
+          hasPhoto:"📷 사진", noPhoto:"메모만", photoTitle:"📷 현장 사진 ({n}장)",
+          lat:"위도", lng:"경도", heading:"방위각", openGoogle:"🗺 구글맵에서 길찾기", noGps:"위치 정보 없음" },
+    en: { updated:"Updated: ", loadFail:"Load failed", errLoad:"❌ Could not load data.",
+          empty:"No Laos field records yet.", noName:"(no name)",
+          hasPhoto:"📷 Photo", noPhoto:"Memo only", photoTitle:"📷 Site photos ({n})",
+          lat:"Lat", lng:"Lng", heading:"Heading", openGoogle:"🗺 Open in Google Maps", noGps:"No location" }
+  };
+  const t = k => T[lang][k];
+
+  function setLang(l) {
+    lang = l;
+    ["ko","en"].forEach(x => {
+      const b = document.getElementById("lang" + x.charAt(0).toUpperCase() + x.slice(1));
+      if (b) b.classList.toggle("active", x === l);
+    });
+    document.documentElement.lang = l;
+    document.querySelectorAll("[data-ko]").forEach(el => el.textContent = el.getAttribute("data-"+l) || el.getAttribute("data-ko"));
+    document.querySelectorAll("[data-ko-ph]").forEach(el => el.placeholder = el.getAttribute("data-"+l+"-ph") || el.getAttribute("data-ko-ph"));
+    if (allRows.length) renderCards();
+  }
+
+  function headingToDir(deg) {
+    const ko = ["북","북북동","북동","동북동","동","동남동","남동","남남동","남","남남서","남서","서남서","서","서북서","북서","북북서"];
+    const en = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+    const idx = Math.round(deg / 22.5) % 16;
+    return (lang === "ko" ? ko : en)[idx];
+  }
+
+  /* 조회는 서버를 거치지 않고 GitHub을 직접 읽는다. Contents API(즉시 반영) → raw 폴백. */
+  async function fetchFresh(file) {
+    try {
+      const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${file}?ref=main&t=${Date.now()}`,
+                            { headers: { "Accept": "application/vnd.github.raw" }, cache: "no-store" });
+      if (r.ok) return await r.text();
+    } catch (e) { /* raw 폴백 */ }
+    const r2 = await fetch(`https://raw.githubusercontent.com/${REPO}/main/${file}?t=${Date.now()}`, { cache: "no-store" });
+    if (!r2.ok) throw new Error("HTTP " + r2.status);
+    return await r2.text();
+  }
+
+  function parseCSV(text) {
+    const lines = text.split("\n").map(l => l.replace(/\r$/, "")).filter(l => l.replace(/[, \t]/g, "") !== "");
+    if (lines.length <= 1) return [];
+    // 헤더: 기록시각,지점명,메모,위도,경도,방위각,사진링크
+    return lines.slice(1).map(line => {
+      const p = line.split(",");
+      const photo = p.slice(6).join(",").trim();   // 사진링크는 마지막 — 안전하게 꼬리 결합
+      return {
+        time: (p[0]||"").trim(),
+        name: (p[1]||"").trim(),
+        memo: (p[2]||"").trim().replace(/;/g, ", "),
+        lat:  (p[3]||"").trim(),
+        lng:  (p[4]||"").trim(),
+        heading: (p[5]||"").trim(),
+        photos: photo.split(";").map(u => u.trim()).filter(Boolean)
+      };
+    }).reverse();   // 최신 먼저
+  }
+
+  function hasGps(r) {
+    const la = parseFloat(r.lat), ln = parseFloat(r.lng);
+    return !isNaN(la) && !isNaN(ln) && (la !== 0 || ln !== 0);
+  }
+
+  async function loadData() {
+    document.getElementById("dataContainer").innerHTML =
+      `<div class="loading"><div class="spinner"></div>${lang==="ko"?"데이터 불러오는 중…":"Loading…"}</div>`;
+    try {
+      const text = await fetchFresh(LAOS_FILE);
+      allRows = parseCSV(text);
+      document.getElementById("statTotal").textContent = allRows.length;
+      document.getElementById("statPhoto").textContent = allRows.filter(r => r.photos.length).length;
+      document.getElementById("lastUpdate").textContent = t("updated") + new Date().toLocaleString(lang==="ko"?"ko-KR":"en-US");
+      renderCards();
+      renderOverview();
+    } catch (e) {
+      document.getElementById("dataContainer").innerHTML = `<div class="error-msg">${t("errLoad")}<br><small>${e.message}</small></div>`;
+      document.getElementById("lastUpdate").textContent = t("loadFail");
+    }
+  }
+
+  function renderCards() {
+    const q = document.getElementById("filterText").value.trim().toLowerCase();
+    const rows = allRows.filter(r => !q || (r.name+" "+r.memo).toLowerCase().includes(q));
+    const c = document.getElementById("dataContainer");
+    if (!rows.length) { c.innerHTML = `<div class="empty-msg">${t("empty")}</div>`; return; }
+    c.innerHTML = rows.map((r, i) => cardHTML(r, i)).join("");
+  }
+
+  function cardHTML(r, i) {
+    const cardId = "card-" + i;
+    const gps = hasGps(r);
+    const photoBadge = r.photos.length
+      ? `<span class="badge badge-photo">${t("hasPhoto")} ${r.photos.length}</span>`
+      : `<span class="badge badge-nophoto">${t("noPhoto")}</span>`;
+    const photoBlock = r.photos.length ? `
+      <div class="photo-section">
+        <h4>${t("photoTitle").replace("{n}", r.photos.length)}</h4>
+        <div class="photo-gallery">
+          ${r.photos.map(u => `<a href="${u}" target="_blank" class="pg-item"><img src="${u}" loading="lazy" onerror="this.parentElement.style.display='none'"></a>`).join("")}
+        </div>
+      </div>` : "";
+    const headingTxt = (r.heading && r.heading !== "0")
+      ? `${r.heading}° (${headingToDir(parseFloat(r.heading))})` : "—";
+    const coordBlock = gps ? `
+      <div class="coord-row">
+        <div><div class="cl">${t("lat")}</div><div class="cv">${(+r.lat).toFixed(6)}</div></div>
+        <div><div class="cl">${t("lng")}</div><div class="cv">${(+r.lng).toFixed(6)}</div></div>
+        <div><div class="cl">${t("heading")}</div><div class="cv">${headingTxt}</div></div>
+      </div>
+      <a class="btn-google" target="_blank" href="https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lng}">${t("openGoogle")}</a>`
+      : `<div class="coord-row"><div style="grid-column:1/4;color:#94a3b8;">${t("noGps")}</div></div>`;
+
+    return `
+    <div class="data-card">
+      <div class="card-header" onclick="document.getElementById('${cardId}').classList.toggle('open')">
+        <div>
+          <div class="sp-name">${r.name || t("noName")}</div>
+          <div class="sp-time">${r.time}</div>
+        </div>
+        ${photoBadge}
+      </div>
+      <div class="card-body" id="${cardId}">
+        ${r.memo ? `<div class="memo-box">📝 ${r.memo}</div>` : ""}
+        ${photoBlock}
+        ${coordBlock}
+      </div>
+    </div>`;
+  }
+
+  /* ── 전체 지점 오버뷰 지도 (OSM, 무료, 키 불필요). 카드와 독립 — 실패해도 카드는 정상. ── */
+  function renderOverview() {
+    const pts = allRows.filter(hasGps);
+    const wrap = document.getElementById("overviewWrap");
+    if (!pts.length || typeof L === "undefined") { wrap.style.display = "none"; return; }
+    wrap.style.display = "block";
+
+    if (!overviewMap) {
+      overviewMap = L.map("overviewMap");
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19, attribution: "© OpenStreetMap"
+      }).addTo(overviewMap);
+    } else {
+      overviewMap.eachLayer(l => { if (l instanceof L.Marker) overviewMap.removeLayer(l); });
+    }
+
+    const latlngs = [];
+    pts.forEach(r => {
+      const la = +r.lat, ln = +r.lng;
+      latlngs.push([la, ln]);
+      const thumb = r.photos.length ? `<img src="${r.photos[0]}" onerror="this.style.display='none'">` : "";
+      const popup = `<b>${r.name || t("noName")}</b><br><small>${r.time}</small>` +
+        (r.memo ? `<br>${r.memo}` : "") + thumb +
+        `<a href="https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lng}" target="_blank">${t("openGoogle")}</a>`;
+      L.marker([la, ln]).addTo(overviewMap).bindPopup(popup);
+    });
+    if (latlngs.length === 1) overviewMap.setView(latlngs[0], 15);
+    else overviewMap.fitBounds(latlngs, { padding: [30, 30] });
+    setTimeout(() => overviewMap.invalidateSize(), 100);
+  }
+
+  loadData();
+</script>
+</body>
+</html>
