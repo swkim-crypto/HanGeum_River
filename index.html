@@ -466,12 +466,46 @@
   /* ── 다중 사진: 스테이징 + IndexedDB 큐 + 일괄 전송 ── */
   let staging = [];            // 현재 측정에 첨부할 사진 [{blob,url}]
 
+  /* ── 사진 자동 축소: 전송 전 1280px·품질0.7로 줄여 업로드 속도/용량 절감.
+     실패하면 원본을 그대로 사용(안전). 유속·라오스 양쪽에서 공용. ── */
+  async function downscaleImage(file, maxDim = 1280, quality = 0.7) {
+    if (!file || !file.type || !file.type.startsWith("image/")) return file;
+    try {
+      let bmp = null, w, h, src;
+      if (window.createImageBitmap) {
+        bmp = await createImageBitmap(file, { imageOrientation: "from-image" }).catch(() => null);
+      }
+      if (bmp) {
+        w = bmp.width; h = bmp.height; src = bmp;
+      } else {
+        const url = URL.createObjectURL(file);
+        const img = await new Promise((res, rej) => {
+          const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = url;
+        });
+        w = img.naturalWidth; h = img.naturalHeight; src = img;
+        URL.revokeObjectURL(url);
+      }
+      const scale = Math.min(1, maxDim / Math.max(w, h));
+      if (scale >= 1 && file.size < 600 * 1024) { if (bmp && bmp.close) bmp.close(); return file; }
+      const cw = Math.round(w * scale), ch = Math.round(h * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = cw; canvas.height = ch;
+      canvas.getContext("2d").drawImage(src, 0, 0, cw, ch);
+      if (bmp && bmp.close) bmp.close();
+      const blob = await new Promise(res => canvas.toBlob(res, "image/jpeg", quality));
+      return (blob && blob.size < file.size) ? blob : file;
+    } catch (e) {
+      return file;
+    }
+  }
+
   // 사진 추가 (탭마다 1장)
-  document.getElementById("photo").addEventListener("change", e => {
+  document.getElementById("photo").addEventListener("change", async e => {
     const file = e.target.files[0];
     e.target.value = "";
     if (!file) return;
-    staging.push({ blob: file, url: URL.createObjectURL(file) });
+    const blob = await downscaleImage(file);
+    staging.push({ blob, url: URL.createObjectURL(blob) });
     renderStaging();
   });
 
@@ -696,11 +730,12 @@
     window.scrollTo(0, 0);
   }
 
-  document.getElementById("laosPhoto").addEventListener("change", e => {
+  document.getElementById("laosPhoto").addEventListener("change", async e => {
     const file = e.target.files[0];
     e.target.value = "";
     if (!file) return;
-    laosStaging.push({ blob: file, url: URL.createObjectURL(file) });
+    const blob = await downscaleImage(file);
+    laosStaging.push({ blob, url: URL.createObjectURL(blob) });
     renderLaosStaging();
   });
 
